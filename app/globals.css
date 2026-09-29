@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-cream: #FAFAF8;
+  --color-cream-warm: #F5F1EA;
+  --color-card: #FFFFFF;
+  --color-border: #EAE6DE;
+  --color-border-strong: #DDD6C9;
+  --color-charcoal: #1A2320;
+  --color-charcoal-soft: #2C3833;
+  --color-muted: #6E7671;
+  --color-brand-green: #1D9E75;
+  --color-brand-green-dark: #0d6b50;
+  --color-brand-green-light: #E8F5F0;
+  --color-terracotta: #C1613A;
+  --color-saffron: #E4A53A;
+
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-dm-sans), system-ui, -apple-system, sans-serif;
+
+  --radius-card: 1.25rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-charcoal);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-brand-green);
+  color: white;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+  font-feature-settings: "lnum", "kern", "liga";
+  letter-spacing: -0.01em;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-brand-green-dark);
+}
+
+.rule {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-border-strong) 20%,
+    var(--color-border-strong) 80%,
+    transparent
+  );
+}
+
+.dotted-rule {
+  border-top: 1px dashed var(--color-border-strong);
+}
+
+.prose-editorial {
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--color-charcoal-soft);
+}
+.prose-editorial p + p {
+  margin-top: 1.15em;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
