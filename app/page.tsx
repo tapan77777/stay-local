@@ -17,6 +17,7 @@ import { ServiceCard } from "@/components/site/service-card";
 import { ExperienceCard } from "@/components/site/experience-card";
 import { FounderNote } from "@/components/site/founder-note";
 import { Hero } from "@/components/site/hero";
+import { IndependentTravel } from "@/components/site/independent-travel";
 import { Reveal } from "@/components/site/reveal";
 import { TravelStyles } from "@/components/site/travel-styles";
 import { services } from "@/lib/services";
@@ -37,9 +38,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <Reveal>
-        <IndependentTravel />
-      </Reveal>
+      <IndependentTravel />
       <TravelStyles />
       <Reveal>
         <FounderNote />
@@ -57,65 +56,6 @@ export default function HomePage() {
         <ClosingCta />
       </Reveal>
     </>
-  );
-}
-
-function IndependentTravel() {
-  return (
-    <Section tone="warm">
-      <Container>
-        <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center">
-          <div>
-            <SectionEyebrow>Travel your way</SectionEyebrow>
-            <SectionHeading className="mt-3">
-              You don&apos;t need to join a tour.
-            </SectionHeading>
-            <div className="prose-editorial mt-5 max-w-xl">
-              <p>
-                Most travelers arriving in India feel they need to buy a
-                packaged tour to make it work. You don&apos;t.
-              </p>
-              <p>
-                Travel independently. Move at your own pace, stop where you
-                want, stay where you like. StayLocal handles the parts that
-                are hard from outside India — planning, local knowledge,
-                someone to reach when things get confusing.
-              </p>
-              <p>
-                You keep the freedom. We handle the friction.
-              </p>
-            </div>
-          </div>
-
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            {[
-              {
-                title: "You choose the pace",
-                body: "No fixed group, no shared bus. Your dates, your route, your stops.",
-              },
-              {
-                title: "We plan the route",
-                body: "A real itinerary shaped around your travel style — not a brochure.",
-              },
-              {
-                title: "Local help when needed",
-                body: "WhatsApp support, and a trusted local on the ground if you want one.",
-              },
-            ].map((item) => (
-              <li
-                key={item.title}
-                className="rounded-2xl border border-border bg-card p-5"
-              >
-                <p className="font-serif text-lg text-charcoal">{item.title}</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                  {item.body}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </Container>
-    </Section>
   );
 }
 

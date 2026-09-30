@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronDown, Volume2, VolumeX } from "lucide-react";
 import {
@@ -241,51 +242,88 @@ export function Hero() {
 }
 
 function TalkCard({ compact = false }: { compact?: boolean }) {
+  const [portraitFailed, setPortraitFailed] = useState(false);
   return (
     <div
       className={
         compact
-          ? "rounded-2xl border border-border bg-card p-6 shadow-[0_10px_40px_rgba(20,30,25,0.06)]"
-          : "w-[360px] rounded-3xl border border-white/40 bg-cream/95 p-7 text-charcoal shadow-[0_30px_80px_rgba(10,15,12,0.35)] backdrop-blur-md"
+          ? "overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_40px_rgba(20,30,25,0.06)]"
+          : "w-[300px] overflow-hidden rounded-3xl border border-white/40 bg-cream/95 text-charcoal shadow-[0_30px_80px_rgba(10,15,12,0.35)] backdrop-blur-md xl:w-[320px]"
       }
     >
-      <p className="eyebrow">Talk to Tapan</p>
-      <p className="mt-3 font-serif text-xl leading-snug text-charcoal">
-        Not sure how to plan India?
-      </p>
-
-      <ul className="mt-5 space-y-2.5">
-        {cardBullets.map((b) => (
-          <li
-            key={b}
-            className="flex items-start gap-2.5 text-[14px] leading-snug text-charcoal-soft"
-          >
-            <Check
-              size={14}
-              strokeWidth={2.5}
-              className="mt-[3px] shrink-0 text-brand-green"
-            />
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-6 flex items-baseline gap-2 border-t border-border pt-5">
-        <span className="font-serif text-3xl leading-none text-charcoal">
-          $10
-        </span>
-        <span className="text-xs text-muted">60-minute private consultation</span>
-      </div>
-
-      <Button asChild variant="primary" size="lg" className="mt-5 w-full">
-        <Link href={primaryCta.href} prefetch className="group">
-          Choose a time
-          <ArrowRight
-            size={14}
-            className="ml-0.5 transition-transform group-hover:translate-x-0.5"
+      {!portraitFailed && (
+        <div className="relative aspect-[8/3] w-full overflow-hidden bg-cream-warm">
+          <Image
+            src="/images/tapan.jpg"
+            alt="Tapan, StayLocal founder"
+            fill
+            sizes={compact ? "(min-width: 640px) 480px, 92vw" : "(min-width: 1280px) 320px, 300px"}
+            className="object-cover"
+            style={{ objectPosition: "50% 28%" }}
+            priority
+            onError={(e) => {
+              // Diagnostic: surface load failures instead of silently hiding.
+              // Card still degrades gracefully (image band unmounts).
+              console.warn(
+                "[TalkCard] portrait failed to load at /images/tapan.jpg",
+                e,
+              );
+              setPortraitFailed(true);
+            }}
           />
-        </Link>
-      </Button>
+          {/* Soft fade at the seam so the photo blends into the content
+              area rather than terminating on a hard horizontal line. */}
+          <div
+            aria-hidden
+            className={
+              "pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t " +
+              (compact ? "from-card" : "from-cream/95") +
+              " to-transparent"
+            }
+          />
+        </div>
+      )}
+      <div className={compact ? "p-5" : "p-5 xl:p-6"}>
+        <p className="eyebrow">Talk to Tapan</p>
+        <p className="mt-2 font-serif text-[19px] leading-tight text-charcoal xl:text-xl">
+          Not sure how to plan India?
+        </p>
+
+        <ul className="mt-4 space-y-1.5">
+          {cardBullets.map((b) => (
+            <li
+              key={b}
+              className="flex items-start gap-2 text-[13px] leading-snug text-charcoal-soft"
+            >
+              <Check
+                size={13}
+                strokeWidth={2.5}
+                className="mt-[3px] shrink-0 text-brand-green"
+              />
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-4 flex items-baseline gap-2 border-t border-border pt-4">
+          <span className="font-serif text-2xl leading-none text-charcoal">
+            $10
+          </span>
+          <span className="text-[11px] text-muted">
+            60-minute private consultation
+          </span>
+        </div>
+
+        <Button asChild variant="primary" size="md" className="mt-4 w-full">
+          <Link href={primaryCta.href} prefetch className="group">
+            Choose a time
+            <ArrowRight
+              size={14}
+              className="ml-0.5 transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
