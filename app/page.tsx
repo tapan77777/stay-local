@@ -1,17 +1,8 @@
 import Link from "next/link";
 import {
-  ArrowRight,
   Compass,
   MapPin,
   MessageCircle,
-  Mountain,
-  Landmark,
-  UtensilsCrossed,
-  Leaf,
-  PawPrint,
-  Waves,
-  Users,
-  BedDouble,
   User,
   ShieldAlert,
   MessageSquare,
@@ -27,6 +18,7 @@ import { ExperienceCard } from "@/components/site/experience-card";
 import { FounderNote } from "@/components/site/founder-note";
 import { Hero } from "@/components/site/hero";
 import { Reveal } from "@/components/site/reveal";
+import { TravelStyles } from "@/components/site/travel-styles";
 import { services } from "@/lib/services";
 import { getFeaturedExperiences } from "@/lib/experiences";
 import { buildMetadata } from "@/lib/seo";
@@ -48,9 +40,7 @@ export default function HomePage() {
       <Reveal>
         <IndependentTravel />
       </Reveal>
-      <Reveal>
-        <TravelStyles />
-      </Reveal>
+      <TravelStyles />
       <Reveal>
         <FounderNote />
       </Reveal>
@@ -67,65 +57,6 @@ export default function HomePage() {
         <ClosingCta />
       </Reveal>
     </>
-  );
-}
-
-const travelStyles = [
-  { icon: Mountain, label: "Mountains", desc: "Himalayas, valleys, quiet passes." },
-  { icon: Landmark, label: "Culture & Heritage", desc: "Old cities, forts, living traditions." },
-  { icon: UtensilsCrossed, label: "Food", desc: "Street food, regional kitchens, home meals." },
-  { icon: Leaf, label: "Nature", desc: "Forests, rivers, tea country, offbeat trails." },
-  { icon: PawPrint, label: "Wildlife", desc: "Tigers, elephants, birds, national parks." },
-  { icon: Waves, label: "Adventure", desc: "Treks, surf, dives, high-altitude drives." },
-  { icon: Users, label: "Local Life", desc: "Homestays, villages, slow days with locals." },
-  { icon: BedDouble, label: "Comfort", desc: "Boutique stays, private transport, easy pacing." },
-];
-
-function TravelStyles() {
-  return (
-    <Section tone="cream" className="border-b border-border">
-      <Container>
-        <div className="max-w-2xl">
-          <SectionEyebrow>Start with what you love</SectionEyebrow>
-          <SectionHeading className="mt-3">
-            What kind of India are you looking for?
-          </SectionHeading>
-          <SectionLede>
-            India is not one trip — it is many. Pick the shapes that pull you,
-            and we&apos;ll build a route around them on the call.
-          </SectionLede>
-        </div>
-
-        <ul className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {travelStyles.map(({ icon: Icon, label, desc }) => (
-            <li key={label}>
-              <Link
-                href="/consultation"
-                className="group flex h-full flex-col rounded-2xl border border-border bg-card p-5 transition-colors hover:border-brand-green/40 hover:bg-brand-green-light/30"
-              >
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-green-light text-brand-green-dark">
-                  <Icon size={18} />
-                </span>
-                <span className="mt-4 font-serif text-lg text-charcoal">
-                  {label}
-                </span>
-                <span className="mt-1 text-sm leading-relaxed text-muted">
-                  {desc}
-                </span>
-                <span className="mt-4 inline-flex items-center gap-1 text-xs text-brand-green opacity-0 transition-opacity group-hover:opacity-100">
-                  Plan this <ArrowRight size={12} />
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-10 text-sm text-muted">
-          Want more than one? Most trips mix two or three. Bring them all to
-          the $10 call — we&apos;ll shape them into a real route.
-        </p>
-      </Container>
-    </Section>
   );
 }
 
