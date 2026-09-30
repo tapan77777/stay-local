@@ -30,12 +30,6 @@ export type Experience = {
   duration?: string;
   avgPerDay?: string;
   includes?: string;
-  whoShouldGo?: string[];
-  whatIdAvoid?: string[];
-  food?: string[];
-  stay?: string[];
-  gettingThere?: string[];
-  observations?: string[];
 };
 
 function normalizeImagePath(src: string | undefined): string | undefined {
@@ -70,12 +64,15 @@ export function getRelatedExperiences(slug: string, count = 3): Experience[] {
   if (!current) return getAllExperiences().slice(0, count);
   const tags = new Set(current.tags ?? []);
   const state = extractState(current.place);
+  // Tags weigh more than state so related feels like similar *experiences*
+  // (mountains, trek, cafes) not just similar geography — the corpus is
+  // heavily Himalayan and state-dominant scoring collapses variety.
   const scored = getAllExperiences()
     .filter((e) => e.slug !== slug)
     .map((e) => {
       let score = 0;
-      for (const t of e.tags ?? []) if (tags.has(t)) score += 2;
-      if (extractState(e.place) === state) score += 3;
+      for (const t of e.tags ?? []) if (tags.has(t)) score += 3;
+      if (extractState(e.place) === state) score += 1;
       return { e, score };
     })
     .sort((a, b) => b.score - a.score);

@@ -12,8 +12,15 @@ export const site = {
       "I have been traveling across India for years — the mountains, the coasts, the villages, the cities in between. StayLocal exists so travelers from outside India can experience the country the way locals actually live it.",
   },
   contact: {
-    email: "hello@staylocal.travel",
+    email: "tapannaik77777@gmail.com",
     whatsapp: "+919999999999",
+  },
+  // Social profile URLs. Instagram is null until a real StayLocal handle
+  // exists — the footer renders it as a non-navigational "coming soon"
+  // badge. Do not invent handles.
+  social: {
+    instagram: null as string | null,
+    linkedin: "https://www.linkedin.com/in/tapan-naik/" as string | null,
   },
   locales: ["en-US", "en-GB", "en-AU"],
   currency: "USD",
@@ -35,20 +42,16 @@ export const footerLinks = {
   services: [
     { label: "Expert Consultation — $10", href: "/services#consultation" },
     { label: "Your India Plan — $150", href: "/services#plan" },
-    { label: "Plan + Local Help — from $150", href: "/services#local-help" },
-    { label: "Fully Curated Trip — from $1,000", href: "/services#curated" },
+    {
+      label: "Curated India + Personal Local Guide — $150–$300",
+      href: "/services#local-help",
+    },
+    { label: "Fully Curated India — $1,000–$3,000+", href: "/services#curated" },
   ],
   explore: [
     { label: "Experiences", href: "/experiences" },
     { label: "About Tapan", href: "/about" },
     { label: "Pricing", href: "/pricing" },
-  ],
-  soon: [
-    { label: "How it works", href: "/how-it-works" },
-    { label: "Destinations", href: "/destinations" },
-    { label: "Travel guides", href: "/travel-guides" },
-    { label: "Reviews", href: "/reviews" },
-    { label: "FAQ", href: "/faq" },
   ],
 } as const;
 

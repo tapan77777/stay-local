@@ -2,17 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
+  ArrowRight,
   ChevronRight,
   MapPin,
   Clock,
   Wallet,
   Sparkles,
-  Users,
-  ShieldAlert,
-  UtensilsCrossed,
-  BedDouble,
-  Bus,
-  Eye,
 } from "lucide-react";
 import { Container } from "@/components/site/container";
 import { Section, SectionEyebrow, SectionHeading } from "@/components/site/section";
@@ -167,35 +162,6 @@ export default async function ExperienceDetailPage({
                 </div>
               )}
 
-              {e.whoShouldGo && e.whoShouldGo.length > 0 && (
-                <NotesBlock
-                  eyebrow="Who should go"
-                  heading="Who this place is really for."
-                  icon={<Users size={16} />}
-                  items={e.whoShouldGo}
-                  tone="green"
-                />
-              )}
-
-              {e.whatIdAvoid && e.whatIdAvoid.length > 0 && (
-                <NotesBlock
-                  eyebrow="What I'd avoid"
-                  heading="Skip these — you won't miss anything."
-                  icon={<ShieldAlert size={16} />}
-                  items={e.whatIdAvoid}
-                  tone="terracotta"
-                />
-              )}
-
-              {e.observations && e.observations.length > 0 && (
-                <NotesBlock
-                  eyebrow="First-hand observations"
-                  heading="Things I noticed on the ground."
-                  icon={<Eye size={16} />}
-                  items={e.observations}
-                />
-              )}
-
               {e.days && e.days.length > 0 && (
                 <div className="mt-16">
                   <SectionEyebrow>Day by day</SectionEyebrow>
@@ -251,32 +217,6 @@ export default async function ExperienceDetailPage({
                 </div>
               )}
 
-              {(e.food || e.stay || e.gettingThere) && (
-                <div className="mt-16 grid gap-6 sm:grid-cols-2">
-                  {e.food && e.food.length > 0 && (
-                    <PracticalBlock
-                      icon={<UtensilsCrossed size={16} />}
-                      title="Food"
-                      items={e.food}
-                    />
-                  )}
-                  {e.stay && e.stay.length > 0 && (
-                    <PracticalBlock
-                      icon={<BedDouble size={16} />}
-                      title="Where I stayed"
-                      items={e.stay}
-                    />
-                  )}
-                  {e.gettingThere && e.gettingThere.length > 0 && (
-                    <PracticalBlock
-                      icon={<Bus size={16} />}
-                      title="Getting there"
-                      items={e.gettingThere}
-                      className="sm:col-span-2"
-                    />
-                  )}
-                </div>
-              )}
             </article>
 
             <aside className="space-y-6 lg:sticky lg:top-28 lg:self-start">
@@ -321,8 +261,22 @@ export default async function ExperienceDetailPage({
                   Book a $10 call and I&apos;ll help you shape a version of
                   this trip that fits your dates, pace and travel style.
                 </p>
-                <div className="mt-5">
+                <div className="mt-5 space-y-2.5">
                   <ConsultCta size="md" className="w-full" />
+                  <Button
+                    asChild
+                    variant="secondary"
+                    size="md"
+                    className="w-full"
+                  >
+                    <Link href="/services#plan" className="group">
+                      Want me to plan this? — $150
+                      <ArrowRight
+                        size={14}
+                        className="ml-0.5 transition-transform group-hover:translate-x-0.5"
+                      />
+                    </Link>
+                  </Button>
                 </div>
               </div>
             </aside>
@@ -380,83 +334,3 @@ function SummaryRow({
   );
 }
 
-function NotesBlock({
-  eyebrow,
-  heading,
-  icon,
-  items,
-  tone = "neutral",
-}: {
-  eyebrow: string;
-  heading: string;
-  icon: React.ReactNode;
-  items: string[];
-  tone?: "neutral" | "green" | "terracotta";
-}) {
-  const chip =
-    tone === "green"
-      ? "bg-brand-green-light text-brand-green-dark"
-      : tone === "terracotta"
-        ? "bg-terracotta/15 text-terracotta"
-        : "bg-cream-warm text-charcoal";
-  return (
-    <div className="mt-16">
-      <div className="flex items-center gap-3">
-        <span className={`grid h-9 w-9 place-items-center rounded-full ${chip}`}>
-          {icon}
-        </span>
-        <SectionEyebrow>{eyebrow}</SectionEyebrow>
-      </div>
-      <SectionHeading as="h2" className="mt-3 text-2xl lg:text-3xl">
-        {heading}
-      </SectionHeading>
-      <ul className="mt-6 space-y-3">
-        {items.map((item, i) => (
-          <li
-            key={i}
-            className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-[15px] leading-relaxed text-charcoal-soft"
-          >
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-green" />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function PracticalBlock({
-  icon,
-  title,
-  items,
-  className,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  items: string[];
-  className?: string;
-}) {
-  return (
-    <div
-      className={`rounded-2xl border border-border bg-card p-6 ${className ?? ""}`}
-    >
-      <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-green-light text-brand-green-dark">
-          {icon}
-        </span>
-        <p className="font-serif text-lg text-charcoal">{title}</p>
-      </div>
-      <ul className="mt-4 space-y-2">
-        {items.map((item, i) => (
-          <li
-            key={i}
-            className="flex items-start gap-2 text-[14px] leading-relaxed text-charcoal-soft"
-          >
-            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-brand-green" />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}

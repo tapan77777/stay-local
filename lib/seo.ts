@@ -42,6 +42,9 @@ export function buildMetadata({
 }
 
 export function orgJsonLd() {
+  const sameAs = [site.social.instagram, site.social.linkedin].filter(
+    (v): v is string => Boolean(v)
+  );
   return {
     "@context": "https://schema.org",
     "@type": "TravelAgency",
@@ -54,7 +57,13 @@ export function orgJsonLd() {
       name: site.founder.name,
       jobTitle: site.founder.role,
     },
-    sameAs: [],
+    contactPoint: {
+      "@type": "ContactPoint",
+      email: site.contact.email,
+      contactType: "Customer Service",
+      availableLanguage: ["English", "Hindi"],
+    },
+    sameAs,
   };
 }
 
@@ -89,6 +98,21 @@ export function experienceJsonLd(input: {
     mainEntityOfPage: new URL(input.path, site.url).toString(),
     contentLocation: input.place ? { "@type": "Place", name: input.place } : undefined,
     datePublished: input.datePublished ?? "2026-01-01",
+  };
+}
+
+export function faqJsonLd(items: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((it) => ({
+      "@type": "Question",
+      name: it.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: it.a,
+      },
+    })),
   };
 }
 

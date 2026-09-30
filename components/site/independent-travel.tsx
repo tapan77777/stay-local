@@ -12,6 +12,7 @@ import {
 } from "@/components/site/section";
 import { Button } from "@/components/ui/button";
 import { primaryCta } from "@/lib/site";
+import { services, type ServiceTier } from "@/lib/services";
 
 // ---------- Types ----------
 
@@ -33,6 +34,48 @@ type Plan = {
   note?: string;
   gradient: string;
 };
+
+// Presentation-only copy for the pricing preview cards. Price, title and
+// priceNote are pulled from `services` in lib/services.ts to keep this page
+// in lockstep with the canonical service data.
+type PlanPresentation = {
+  serviceId: ServiceTier["id"];
+  n: string;
+  lead: string;
+  bullets: readonly string[];
+  gradient: string;
+};
+
+function priceParts(service: ServiceTier): { base: number; rangeSuffix?: string } {
+  const base =
+    typeof service.priceUsd === "number"
+      ? service.priceUsd
+      : parseInt(String(service.priceUsd).replace(/[^0-9]/g, ""), 10);
+  const basePrefix = `$${base.toLocaleString("en-US")}`;
+  const suffix =
+    service.price.startsWith(basePrefix) && service.price.length > basePrefix.length
+      ? service.price.slice(basePrefix.length)
+      : undefined;
+  return { base, rangeSuffix: suffix };
+}
+
+function buildPlan(p: PlanPresentation): Plan {
+  const service = services.find((s) => s.id === p.serviceId);
+  if (!service) {
+    throw new Error(`IndependentTravel: unknown service id "${p.serviceId}"`);
+  }
+  const { base, rangeSuffix } = priceParts(service);
+  return {
+    n: p.n,
+    title: service.name,
+    base,
+    rangeSuffix,
+    lead: p.lead,
+    bullets: p.bullets,
+    note: service.priceNote,
+    gradient: p.gradient,
+  };
+}
 
 // ---------- Content ----------
 
@@ -74,11 +117,10 @@ const steps: readonly Step[] = [
   },
 ] as const;
 
-const plans: readonly Plan[] = [
+const planCopy: readonly PlanPresentation[] = [
   {
+    serviceId: "plan",
     n: "01",
-    title: "Your India Plan",
-    base: 150,
     lead: "A personalized India itinerary built around you.",
     bullets: [
       "Personalized itinerary",
@@ -90,10 +132,8 @@ const plans: readonly Plan[] = [
       "bg-gradient-to-br from-cream via-cream-warm to-brand-green-light/50",
   },
   {
+    serviceId: "local-help",
     n: "02",
-    title: "Curated India + Personal Local Guide",
-    base: 200,
-    rangeSuffix: "–$300",
     lead: "Your personal India plan, with a trusted local guide when you want one.",
     bullets: [
       "Everything in Your India Plan",
@@ -101,15 +141,12 @@ const plans: readonly Plan[] = [
       "Local navigation & recommendations",
       "Help with translation and local experiences",
     ],
-    note: "Final price depends on trip duration and complexity.",
     gradient:
       "bg-gradient-to-br from-brand-green-light/70 via-cream-warm to-brand-green-light/40",
   },
   {
+    serviceId: "curated",
     n: "03",
-    title: "Fully Curated India",
-    base: 1000,
-    rangeSuffix: "–$3,000+",
     lead: "A complete India journey planned and organized for you.",
     bullets: [
       "Complete itinerary planning",
@@ -118,11 +155,12 @@ const plans: readonly Plan[] = [
       "Guides and local arrangements",
       "Booking coordination & ongoing support",
     ],
-    note: "Pricing depends on destination, duration and travel style.",
     gradient:
       "bg-gradient-to-br from-brand-green/[0.12] via-brand-green-light/60 to-cream-warm",
   },
 ] as const;
+
+const plans: readonly Plan[] = planCopy.map(buildPlan);
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 

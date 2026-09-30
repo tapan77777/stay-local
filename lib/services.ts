@@ -18,7 +18,7 @@ export type ServiceTier = {
 export const services: ServiceTier[] = [
   {
     id: "consultation",
-    eyebrow: "Start here",
+    eyebrow: "60-minute private 1:1",
     name: "Expert Consultation",
     tagline: "60 minutes, one-to-one, with Tapan.",
     price: "$10",
@@ -64,7 +64,7 @@ export const services: ServiceTier[] = [
   {
     id: "local-help",
     eyebrow: "Plan + support",
-    name: "Plan + Local Help",
+    name: "Curated India + Personal Local Guide",
     tagline: "Your India plan, plus a trusted local person on the ground.",
     price: "$150–$300",
     priceUsd: 150,
@@ -80,13 +80,13 @@ export const services: ServiceTier[] = [
       "Translation and communication help when needed",
       "Priority WhatsApp support",
     ],
-    ctaLabel: "Get Plan + Local Help",
+    ctaLabel: "Get Curated India + Local Guide",
     ctaHref: "/consultation?service=local-help",
   },
   {
     id: "curated",
     eyebrow: "White-glove",
-    name: "Fully Curated India Trip",
+    name: "Fully Curated India",
     tagline: "Your entire India trip — planned, booked, and handled.",
     price: "$1,000–$3,000+",
     priceUsd: "1000+",
@@ -103,9 +103,34 @@ export const services: ServiceTier[] = [
       "On-trip local support",
       "Priority WhatsApp during your trip",
     ],
-    ctaLabel: "Enquire About Curated Trip",
+    ctaLabel: "Enquire About Fully Curated India",
     ctaHref: "/consultation?service=curated",
   },
+];
+
+// Single source of truth for the side-by-side comparison — consumed by
+// `/pricing` and the homepage `ServicesSelector`. Order of `support` matches
+// the `services` array above: [consultation, plan, local-help, curated].
+// Every row is derived strictly from what each service's `includes` array
+// actually promises. If a promise isn't in the includes, the cell is false.
+export type ComparisonRow = {
+  label: string;
+  support: [boolean, boolean, boolean, boolean];
+};
+
+export const comparisonMatrix: ComparisonRow[] = [
+  { label: "60-minute 1:1 video call with Tapan", support: [true, false, false, false] },
+  { label: "Destination & route recommendations", support: [true, true, true, true] },
+  { label: "Scam & safety awareness", support: [true, true, true, true] },
+  { label: "Personalized itinerary", support: [false, true, true, true] },
+  { label: "Trusted stays, food & experiences", support: [false, true, true, true] },
+  { label: "Local transport guidance", support: [false, true, true, false] },
+  { label: "Google Maps + useful links", support: [false, true, true, false] },
+  { label: "WhatsApp support during your trip", support: [false, true, true, true] },
+  { label: "Trusted local person on the ground", support: [false, false, true, true] },
+  { label: "Translation & communication help", support: [false, false, true, false] },
+  { label: "Accommodation booked for you", support: [false, false, false, true] },
+  { label: "Transport booked for you", support: [false, false, false, true] },
 ];
 
 export const principles = [

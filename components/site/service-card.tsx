@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { ServiceTier } from "@/lib/services";
 import { cn } from "@/lib/utils";
 
@@ -19,18 +18,12 @@ export function ServiceCard({
     <Card
       id={service.id}
       className={cn(
-        "relative flex h-full flex-col",
+        "relative flex h-full flex-col scroll-mt-28",
         compact ? "p-6" : "p-7 lg:p-8",
         service.emphasized &&
           "border-brand-green/40 bg-brand-green-light/40 ring-1 ring-brand-green/10"
       )}
     >
-      {service.emphasized && (
-        <Badge variant="green" className={cn("absolute -top-3", compact ? "left-6" : "left-7 lg:left-8")}>
-          Recommended first step
-        </Badge>
-      )}
-
       <p className="eyebrow">{service.eyebrow}</p>
       <h3
         className={cn(

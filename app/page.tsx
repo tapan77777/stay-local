@@ -2,27 +2,24 @@ import Link from "next/link";
 import {
   Compass,
   MapPin,
-  MessageCircle,
   User,
   ShieldAlert,
   MessageSquare,
   Tag,
-  Sparkles,
 } from "lucide-react";
 import { Container } from "@/components/site/container";
-import { Section, SectionEyebrow, SectionHeading, SectionLede } from "@/components/site/section";
-import { Button } from "@/components/ui/button";
+import { Section, SectionEyebrow, SectionHeading } from "@/components/site/section";
 import { ConsultCta } from "@/components/site/consult-cta";
-import { ServiceCard } from "@/components/site/service-card";
-import { ExperienceCard } from "@/components/site/experience-card";
+import { ExperiencesRail } from "@/components/site/experiences-rail";
 import { FounderNote } from "@/components/site/founder-note";
 import { Hero } from "@/components/site/hero";
 import { IndependentTravel } from "@/components/site/independent-travel";
 import { Reveal } from "@/components/site/reveal";
+import { ServicesSelector } from "@/components/site/services-selector";
 import { TravelStyles } from "@/components/site/travel-styles";
-import { services } from "@/lib/services";
+import { JsonLd } from "@/components/site/jsonld";
 import { getFeaturedExperiences } from "@/lib/experiences";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, orgJsonLd } from "@/lib/seo";
 import { site } from "@/lib/site";
 
 export const metadata = buildMetadata({
@@ -37,18 +34,13 @@ export default function HomePage() {
 
   return (
     <>
+      <JsonLd data={orgJsonLd()} />
       <Hero />
       <IndependentTravel />
       <TravelStyles />
-      <Reveal>
-        <FounderNote />
-      </Reveal>
-      <Reveal>
-        <FeaturedExperiences experiences={featured} />
-      </Reveal>
-      <Reveal>
-        <ServicesOverview />
-      </Reveal>
+      <FounderNote />
+      <ExperiencesRail experiences={featured} />
+      <ServicesSelector />
       <Reveal>
         <TrustMarkers />
       </Reveal>
@@ -93,91 +85,6 @@ function TrustMarkers() {
             </li>
           ))}
         </ul>
-      </Container>
-    </Section>
-  );
-}
-
-function ServicesOverview() {
-  const iconFor: Record<string, React.ReactNode> = {
-    consultation: <MessageCircle size={18} />,
-    plan: <Compass size={18} />,
-    "local-help": <MapPin size={18} />,
-    curated: <Sparkles size={18} />,
-  };
-
-  return (
-    <Section tone="cream" className="border-b border-border">
-      <Container>
-        <div className="max-w-2xl">
-          <SectionEyebrow>Four ways I help</SectionEyebrow>
-          <SectionHeading className="mt-3">
-            From a $10 conversation to a trip planned end-to-end.
-          </SectionHeading>
-          <SectionLede>
-            Not everyone needs the same thing. Start with a call, or go all
-            the way to a fully curated trip. You pick — and you know the
-            price up front.
-          </SectionLede>
-        </div>
-
-        <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {services.map((s) => (
-            <div key={s.id} className="flex flex-col">
-              <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-green-light text-brand-green-dark">
-                {iconFor[s.id]}
-              </div>
-              <ServiceCard service={s} compact />
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted">
-            Not sure where to start? Book the $10 call. You&apos;ll leave with
-            a clear picture — even if you don&apos;t book anything else.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <ConsultCta size="md" />
-            <Button asChild variant="secondary" size="md">
-              <Link href="/pricing">See full pricing →</Link>
-            </Button>
-          </div>
-        </div>
-      </Container>
-    </Section>
-  );
-}
-
-function FeaturedExperiences({
-  experiences,
-}: {
-  experiences: ReturnType<typeof getFeaturedExperiences>;
-}) {
-  return (
-    <Section tone="warm">
-      <Container>
-        <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-2xl">
-            <SectionEyebrow>First-hand experiences</SectionEyebrow>
-            <SectionHeading className="mt-3">
-              Places I&apos;ve been. Notes I&apos;d give a friend.
-            </SectionHeading>
-            <SectionLede>
-              Real trips, honest notes — what to do, what to skip, what to
-              avoid, and what most travel blogs won&apos;t tell you.
-            </SectionLede>
-          </div>
-          <Button asChild variant="secondary" size="md">
-            <Link href="/experiences">Browse all experiences →</Link>
-          </Button>
-        </div>
-
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {experiences.map((e, i) => (
-            <ExperienceCard key={e.slug} experience={e} priority={i < 3} />
-          ))}
-        </div>
       </Container>
     </Section>
   );

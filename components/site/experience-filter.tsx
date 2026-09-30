@@ -9,15 +9,15 @@ import { cn } from "@/lib/utils";
 
 const priorityTags = [
   "Mountains",
-  "Beach",
-  "Cafes",
   "Trek",
-  "Village",
+  "Snow",
+  "Cafes",
+  "Offbeat",
   "Solo Travel",
   "Homestay",
-  "Slow Travel",
-  "Offbeat",
-  "Snow",
+  "Village Life",
+  "Beach",
+  "Wildlife",
 ];
 
 export function ExperienceFilter({

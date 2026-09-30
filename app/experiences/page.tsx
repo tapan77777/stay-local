@@ -10,7 +10,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "India Travel Experiences — First-hand notes by Tapan",
   description:
-    "Real, first-hand India travel experiences — mountains, cafés, villages, beaches. Honest notes from a local traveler on what to do, what to skip, and what to expect.",
+    "First-hand India travel notes from Tapan — Himalayan valleys, high-altitude treks, mountain villages, hill cafés, jungle and coast. Honest advice on what to do, what to skip, and what to expect.",
   path: "/experiences",
 });
 
@@ -36,10 +36,11 @@ export default function ExperiencesPage() {
             Places I&apos;ve been. Notes I&apos;d give a friend.
           </SectionHeading>
           <SectionLede>
-            These are the actual trips behind StayLocal — the mountains,
-            cafés, villages and coastlines I keep coming back to. Read the
-            honest version: what I loved, what I&apos;d avoid, what to spend
-            on, and who each place is actually for.
+            These are the actual trips behind StayLocal — mostly Himalayan
+            valleys and treks, with a jungle, a coast and a few hill cafés
+            worth writing home about. Read the honest version: what I loved,
+            what I&apos;d avoid, what to spend on, and who each place is
+            actually for.
           </SectionLede>
         </div>
       </Container>
