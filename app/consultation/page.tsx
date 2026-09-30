@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { MessageCircle, Mail, Check, ArrowRight } from "lucide-react";
+import { MessageCircle, Mail, Check } from "lucide-react";
 import { Container } from "@/components/site/container";
 import { SectionEyebrow } from "@/components/site/section";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { buildMetadata, serviceJsonLd } from "@/lib/seo";
+import { BookConsultationButton } from "@/components/site/book-consultation-button";
 import { JsonLd } from "@/components/site/jsonld";
+import { buildMetadata, serviceJsonLd } from "@/lib/seo";
 import { site, whatsappLink, mailtoLink } from "@/lib/site";
 
 export const metadata = buildMetadata({
@@ -16,19 +14,15 @@ export const metadata = buildMetadata({
   path: "/consultation",
 });
 
-const whatsappMessage = `Hi Tapan, I'd like to book the $10 India travel consultation.\n\nA bit about my trip:\n- Traveling from:\n- Rough dates:\n- What I'm hoping to figure out:`;
+const whatsappMessage = `Hi Tapan, I have a question about the $10 India travel consultation.`;
+const emailSubject = "$10 India travel consultation";
+const emailBody = `Hi Tapan,\n\nI have a question about the $10 India travel consultation.\n\n`;
 
-const emailBody = `Hi Tapan,\n\nI'd like to book the $10 India travel consultation.\n\nA bit about me:\n- Traveling from:\n- Rough dates:\n- Number of travelers:\n- What I want help figuring out:\n\nThanks!`;
-
-const askAbout = [
-  "Where to go",
-  "How long to stay",
-  "Route & transport",
-  "Hotels",
-  "Things worth doing",
-  "Places to avoid",
-  "Your existing itinerary",
-  "Anything you're unsure about",
+const includes = [
+  "Honest destination advice",
+  "Route & transport guidance",
+  "Local knowledge",
+  "Answers to your specific questions",
 ];
 
 export default function ConsultationPage() {
@@ -43,155 +37,100 @@ export default function ConsultationPage() {
           path: "/consultation",
         })}
       />
+
       <Container className="py-20 lg:py-28">
-        <div className="grid gap-14 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-          <div>
-            <SectionEyebrow>The $10 consultation</SectionEyebrow>
-            <h1 className="mt-4 font-serif text-4xl leading-[1.05] tracking-tight text-charcoal sm:text-5xl lg:text-[56px]">
-              Talk to an India Expert.
-            </h1>
-            <p className="mt-4 text-lg text-muted">
-              60 minutes. One-on-one. No package pressure.
+        <div className="mx-auto max-w-2xl">
+          <SectionEyebrow>The $10 consultation</SectionEyebrow>
+          <h1 className="mt-4 font-serif text-4xl leading-[1.05] tracking-tight text-charcoal sm:text-5xl lg:text-[56px]">
+            Talk to an India Expert.
+          </h1>
+          <p className="mt-4 text-lg text-muted">
+            60 minutes. One-on-one. No package pressure.
+          </p>
+
+          <div className="prose-editorial mt-8">
+            <p>Planning India can get confusing.</p>
+            <p>
+              Tell me what you&apos;re planning and I&apos;ll help you make
+              sense of it based on real local knowledge.
             </p>
+          </div>
 
-            <div className="prose-editorial mt-8 max-w-xl">
-              <p>Planning India can get confusing.</p>
-              <p>
-                Tell me what you&apos;re thinking, and I&apos;ll help you make
-                sense of it — based on real local knowledge.
-              </p>
-            </div>
-
-            <div className="mt-10 flex flex-col items-start gap-6 rounded-2xl border border-brand-green/30 bg-brand-green-light/40 p-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8 lg:p-7">
-              <div>
-                <p className="font-serif text-5xl leading-none text-charcoal">
+          <div className="mt-12 overflow-hidden rounded-3xl border border-brand-green/25 bg-brand-green-light/25 shadow-[0_18px_50px_rgba(29,158,117,0.10)]">
+            <div className="p-7 sm:p-9 lg:p-10">
+              <div className="flex items-baseline gap-3">
+                <p className="font-serif text-6xl leading-none text-charcoal lg:text-7xl">
                   $10
                 </p>
-                <p className="mt-2 text-sm text-charcoal-soft">
-                  60-minute private consultation
-                </p>
+                <p className="text-sm text-charcoal-soft">USD</p>
               </div>
-              <Button asChild variant="primary" size="xl">
-                <a href="#book" className="group">
-                  Choose a time
-                  <ArrowRight
-                    size={16}
-                    className="transition-transform group-hover:translate-x-0.5"
-                  />
-                </a>
-              </Button>
-            </div>
+              <p className="mt-3 text-[15px] text-charcoal-soft">
+                60-minute private consultation
+              </p>
 
-            <div className="mt-14">
-              <p className="eyebrow">You can ask about</p>
-              <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-                {askAbout.map((item) => (
+              <ul className="mt-8 space-y-2.5">
+                {includes.map((item) => (
                   <li
                     key={item}
-                    className="flex items-start gap-3 text-[15px] text-charcoal-soft"
+                    className="flex items-start gap-2.5 text-[15px] text-charcoal-soft"
                   >
                     <Check
-                      className="mt-1 shrink-0 text-brand-green"
                       size={16}
                       strokeWidth={2.5}
+                      className="mt-1 shrink-0 text-brand-green"
                     />
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
-            </div>
 
-            <div className="mt-14 rounded-2xl border border-border bg-white p-6 lg:p-7">
-              <p className="eyebrow">How it works today</p>
-              <ol className="mt-4 space-y-3 text-sm text-charcoal-soft">
-                <Step
-                  n={1}
-                  text="Send a short message on WhatsApp or email with your dates and questions."
-                />
-                <Step
-                  n={2}
-                  text="Tapan replies personally within 24 hours with a call time and $10 payment link."
-                />
-                <Step
-                  n={3}
-                  text="You pay $10, we meet on video, and you leave with real answers."
-                />
-              </ol>
-              <p className="mt-4 text-xs text-muted">
-                Direct online booking with instant payment is coming shortly.
-                Until then, this simple flow keeps things personal and honest.
-              </p>
+              <div className="mt-9">
+                <BookConsultationButton className="w-full sm:w-auto" />
+                <p className="mt-4 text-[13px] leading-relaxed text-muted">
+                  Pick a time · Pay $10 · Get your confirmation and Google Meet
+                  link.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="lg:sticky lg:top-28">
-            <Card id="book" className="scroll-mt-28 p-8 lg:p-10">
-              <Badge variant="green">Book in 30 seconds</Badge>
-              <h2 className="mt-4 font-serif text-2xl leading-tight text-charcoal">
-                Send a message. Tapan replies personally.
-              </h2>
-              <p className="mt-2 text-sm text-muted">
-                Pick whichever is easier for you.
-              </p>
-
-              <div className="mt-6 space-y-3">
-                <Button asChild variant="primary" size="xl" className="w-full">
-                  <a
-                    href={whatsappLink(whatsappMessage)}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    <MessageCircle size={18} />
-                    Message on WhatsApp
-                  </a>
-                </Button>
-                <Button asChild variant="secondary" size="xl" className="w-full">
-                  <a href={mailtoLink("$10 India travel consultation", emailBody)}>
-                    <Mail size={18} />
-                    Email {site.contact.email}
-                  </a>
-                </Button>
-              </div>
-
-              <div className="mt-8 dotted-rule" />
-              <div className="mt-6 space-y-3 text-sm text-charcoal-soft">
-                <Row label="Duration" value="60 minutes" />
-                <Row label="Format" value="Video call" />
-                <Row label="Price" value="$10 (flat)" />
-                <Row label="What you get" value="Personal advice + follow-up notes" />
-              </div>
-
-              <p className="mt-6 text-xs leading-relaxed text-muted">
-                Prefer a written plan instead? See{" "}
-                <Link href="/services" className="text-brand-green hover:underline">
-                  all four services and pricing
-                </Link>
-                .
-              </p>
-            </Card>
+          <div className="mt-14">
+            <p className="text-[13px] text-muted">Prefer to ask first?</p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-[15px]">
+              <a
+                href={whatsappLink(whatsappMessage)}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-2 text-charcoal underline-offset-4 hover:text-brand-green hover:underline"
+              >
+                <MessageCircle size={15} />
+                WhatsApp
+              </a>
+              <span aria-hidden className="text-charcoal/25">
+                ·
+              </span>
+              <a
+                href={mailtoLink(emailSubject, emailBody)}
+                className="inline-flex items-center gap-2 text-charcoal underline-offset-4 hover:text-brand-green hover:underline"
+              >
+                <Mail size={15} />
+                {site.contact.email}
+              </a>
+            </div>
           </div>
+
+          <p className="mt-16 text-[13px] text-muted">
+            Looking for something more involved?{" "}
+            <Link
+              href="/services"
+              className="text-brand-green underline-offset-4 hover:underline"
+            >
+              See all four services and pricing
+            </Link>
+            .
+          </p>
         </div>
       </Container>
     </>
-  );
-}
-
-function Step({ n, text }: { n: number; text: string }) {
-  return (
-    <li className="flex items-start gap-4">
-      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-green-light font-serif text-xs text-brand-green-dark">
-        {n}
-      </span>
-      <span>{text}</span>
-    </li>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs uppercase tracking-[0.1em] text-muted">{label}</span>
-      <span className="text-sm text-charcoal">{value}</span>
-    </div>
   );
 }
