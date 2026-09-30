@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { BrandMark } from "@/components/site/brand-mark";
 import { ConsultCta } from "@/components/site/consult-cta";
-import { navLinks } from "@/lib/site";
+import { navLinks, primaryCta } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
@@ -27,17 +27,22 @@ export function Navbar() {
     if (open) setOpen(false);
   }
 
+  const isHome = pathname === "/";
+  const overlay = isHome && !scrolled && !open;
+
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b transition-colors",
-        scrolled
-          ? "border-border/80 bg-cream/85 backdrop-blur-md"
-          : "border-transparent bg-cream/0"
+        "sticky top-0 z-50 w-full border-b transition-all duration-500",
+        overlay
+          ? "border-transparent bg-transparent"
+          : scrolled
+            ? "border-border/80 bg-cream/85 backdrop-blur-md"
+            : "border-transparent bg-cream/0"
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-7 lg:h-[72px] lg:px-10">
-        <BrandMark />
+        <BrandMark variant={overlay ? "light" : "dark"} />
 
         <nav aria-label="Primary" className="hidden lg:block">
           <ul className="flex items-center gap-9">
@@ -49,13 +54,21 @@ export function Navbar() {
                   <Link
                     href={l.href as never}
                     className={cn(
-                      "text-sm text-charcoal/75 transition-colors hover:text-charcoal",
-                      active && "text-charcoal"
+                      "text-sm transition-colors",
+                      overlay
+                        ? "text-cream/85 hover:text-cream"
+                        : "text-charcoal/75 hover:text-charcoal",
+                      active && (overlay ? "text-cream" : "text-charcoal")
                     )}
                   >
                     {l.label}
                     {active && (
-                      <span className="mt-0.5 block h-px w-full bg-brand-green" />
+                      <span
+                        className={cn(
+                          "mt-0.5 block h-px w-full",
+                          overlay ? "bg-brand-green-light" : "bg-brand-green"
+                        )}
+                      />
                     )}
                   </Link>
                 </li>
@@ -65,13 +78,32 @@ export function Navbar() {
         </nav>
 
         <div className="hidden lg:block">
-          <ConsultCta size="sm" />
+          {overlay ? (
+            <Link
+              href={primaryCta.href}
+              prefetch
+              className="group inline-flex h-9 items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 text-[13px] font-medium text-cream backdrop-blur-md transition-colors hover:border-white/50 hover:bg-white/20"
+            >
+              {primaryCta.label}
+              <ArrowRight
+                size={13}
+                className="opacity-80 transition-transform group-hover:translate-x-0.5"
+              />
+            </Link>
+          ) : (
+            <ConsultCta size="sm" />
+          )}
         </div>
 
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="grid h-10 w-10 place-items-center rounded-full border border-border text-charcoal lg:hidden"
+          className={cn(
+            "grid h-10 w-10 place-items-center rounded-full border transition-colors lg:hidden",
+            overlay
+              ? "border-white/30 bg-white/10 text-cream backdrop-blur-md hover:bg-white/20"
+              : "border-border text-charcoal"
+          )}
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
         >

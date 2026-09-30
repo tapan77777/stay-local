@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowRight,
   Compass,
@@ -22,22 +21,16 @@ import {
 import { Container } from "@/components/site/container";
 import { Section, SectionEyebrow, SectionHeading, SectionLede } from "@/components/site/section";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ConsultCta } from "@/components/site/consult-cta";
 import { ServiceCard } from "@/components/site/service-card";
 import { ExperienceCard } from "@/components/site/experience-card";
 import { FounderNote } from "@/components/site/founder-note";
-import { services, principles } from "@/lib/services";
+import { Hero } from "@/components/site/hero";
+import { Reveal } from "@/components/site/reveal";
+import { services } from "@/lib/services";
 import { getFeaturedExperiences } from "@/lib/experiences";
 import { buildMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
-
-const HERO_IMAGE = {
-  src: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=1200&q=80",
-  alt: "Rooftops of Jaipur at golden hour — the kind of India view first-time travelers plan a trip around",
-  caption: "Rajasthan, at your pace",
-  eyebrow: "Featured route",
-};
 
 export const metadata = buildMetadata({
   title: `${site.name} — ${site.tagline}`,
@@ -52,108 +45,28 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <PrinciplesStrip />
-      <TravelStyles />
-      <IndependentTravel />
-      <ServicesOverview />
-      <FeaturedExperiences experiences={featured} />
-      <TrustMarkers />
-      <FounderNote />
-      <ClosingCta />
+      <Reveal>
+        <IndependentTravel />
+      </Reveal>
+      <Reveal>
+        <TravelStyles />
+      </Reveal>
+      <Reveal>
+        <FounderNote />
+      </Reveal>
+      <Reveal>
+        <FeaturedExperiences experiences={featured} />
+      </Reveal>
+      <Reveal>
+        <ServicesOverview />
+      </Reveal>
+      <Reveal>
+        <TrustMarkers />
+      </Reveal>
+      <Reveal>
+        <ClosingCta />
+      </Reveal>
     </>
-  );
-}
-
-function Hero() {
-  return (
-    <section className="relative overflow-hidden bg-cream">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-40 right-[-20%] h-[520px] w-[520px] rounded-full bg-brand-green/8 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-40 left-[-15%] h-[420px] w-[420px] rounded-full bg-saffron/10 blur-3xl"
-      />
-      <Container className="relative pt-16 pb-24 sm:pt-20 lg:pt-24 lg:pb-32">
-        <div className="grid gap-14 lg:grid-cols-[1.1fr_1fr] lg:items-center">
-          <div className="animate-fade-in-up">
-            <Badge variant="green" className="mb-6">
-              <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-brand-green" />
-              India travel, honestly
-            </Badge>
-            <h1 className="font-serif text-[42px] leading-[1.02] tracking-tight text-charcoal sm:text-6xl lg:text-[72px]">
-              Experience India{" "}
-              <span className="italic text-brand-green">your way.</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted lg:text-xl">
-              Real first-hand advice — local knowledge, honest recommendations,
-              and what to watch out for. For travelers from the US, UK, Europe
-              and Australia.
-            </p>
-
-            <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <ConsultCta size="xl" />
-              <Link
-                href="/services"
-                className="group inline-flex items-center gap-2 text-sm text-charcoal underline-offset-4 hover:text-brand-green"
-              >
-                See all four services
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
-
-            <ul className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted">
-              <li className="inline-flex items-center gap-2">
-                <span className="h-1 w-1 rounded-full bg-brand-green" />
-                60-minute 1:1 call
-              </li>
-              <li className="inline-flex items-center gap-2">
-                <span className="h-1 w-1 rounded-full bg-brand-green" />
-                Personally with Tapan
-              </li>
-              <li className="inline-flex items-center gap-2">
-                <span className="h-1 w-1 rounded-full bg-brand-green" />
-                WhatsApp &amp; email support
-              </li>
-            </ul>
-          </div>
-
-          <div className="relative">
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-border bg-cream-warm shadow-[0_20px_60px_rgba(20,30,25,0.08)]">
-              <Image
-                src={HERO_IMAGE.src}
-                alt={HERO_IMAGE.alt}
-                fill
-                sizes="(min-width: 1024px) 40vw, 90vw"
-                priority
-                className="object-cover"
-              />
-              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
-              <div className="absolute inset-x-6 bottom-6 text-white">
-                <p className="text-[11px] uppercase tracking-[0.14em] text-white/80">
-                  {HERO_IMAGE.eyebrow}
-                </p>
-                <p className="mt-1 font-serif text-2xl leading-tight">
-                  {HERO_IMAGE.caption}
-                </p>
-              </div>
-            </div>
-
-            <div className="absolute -bottom-6 -left-6 hidden max-w-[240px] rounded-2xl border border-border bg-card p-4 shadow-lg sm:block">
-              <p className="eyebrow">Advice, not a sales pitch</p>
-              <p className="mt-2 text-sm leading-relaxed text-charcoal">
-                &ldquo;Skip the two-day Taj tour. Give me one full afternoon
-                and one sunrise instead.&rdquo;
-              </p>
-              <p className="mt-3 text-[11px] uppercase tracking-[0.12em] text-muted">
-                — Tapan
-              </p>
-            </div>
-          </div>
-        </div>
-      </Container>
-    </section>
   );
 }
 
@@ -311,24 +224,6 @@ function TrustMarkers() {
         </ul>
       </Container>
     </Section>
-  );
-}
-
-function PrinciplesStrip() {
-  return (
-    <section className="border-y border-border bg-cream-warm">
-      <Container className="grid gap-8 py-10 sm:grid-cols-3 sm:py-12">
-        {principles.map((p) => (
-          <div key={p.title} className="flex items-start gap-3">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-green" />
-            <div>
-              <p className="font-serif text-lg text-charcoal">{p.title}</p>
-              <p className="mt-1 text-sm text-muted">{p.body}</p>
-            </div>
-          </div>
-        ))}
-      </Container>
-    </section>
   );
 }
 
