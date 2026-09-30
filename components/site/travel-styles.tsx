@@ -198,6 +198,13 @@ function TravelCard({
             onError={() => setFailed(true)}
           />
         )}
+        {/* Soft photographic fade at the seam — cream card colour fades to
+            transparent over ~32px so the boundary reads as a gentle blend
+            rather than a hard cut. Sits above the image, below any interaction. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-card via-card/70 to-transparent"
+        />
       </div>
     </Link>
   );
