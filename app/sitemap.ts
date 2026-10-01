@@ -11,6 +11,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/about", priority: 0.7, freq: "monthly" as const },
     { path: "/experiences", priority: 0.9, freq: "weekly" as const },
     { path: "/consultation", priority: 0.9, freq: "monthly" as const },
+    { path: "/guides", priority: 0.7, freq: "monthly" as const },
+    { path: "/guides/apply", priority: 0.6, freq: "monthly" as const },
   ];
 
   const experienceRoutes = getExperienceSlugs().map((slug) => ({

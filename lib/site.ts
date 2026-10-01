@@ -35,6 +35,7 @@ export const navLinks = [
   { label: "Services", href: "/services" },
   { label: "Pricing", href: "/pricing" },
   { label: "Experiences", href: "/experiences" },
+  { label: "Become a Guide", href: "/guides" },
   { label: "About", href: "/about" },
 ] as const;
 
@@ -52,6 +53,7 @@ export const footerLinks = {
     { label: "Experiences", href: "/experiences" },
     { label: "About Tapan", href: "/about" },
     { label: "Pricing", href: "/pricing" },
+    { label: "Become a Guide", href: "/guides" },
   ],
 } as const;
 

@@ -45,9 +45,41 @@ export default function HomePage() {
         <TrustMarkers />
       </Reveal>
       <Reveal>
+        <GuideRecruitCta />
+      </Reveal>
+      <Reveal>
         <ClosingCta />
       </Reveal>
     </>
+  );
+}
+
+function GuideRecruitCta() {
+  return (
+    <Section tone="cream">
+      <Container>
+        <div className="flex flex-col gap-6 rounded-2xl border border-border bg-white px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-10">
+          <div className="max-w-xl">
+            <p className="eyebrow text-brand-green-dark">
+              Guide the network
+            </p>
+            <h2 className="mt-2 font-serif text-2xl leading-tight tracking-tight text-charcoal sm:text-3xl">
+              Know India well? Share it with travelers.
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted">
+              StayLocal is building a vetted network of local guides. If you
+              know your region and love showing it, we&apos;d like to meet.
+            </p>
+          </div>
+          <Link
+            href="/guides"
+            className="inline-flex items-center justify-center self-start rounded-full border border-charcoal bg-charcoal px-6 py-3 text-sm font-medium text-cream transition-colors hover:bg-charcoal/90 sm:self-auto"
+          >
+            Become a StayLocal Guide →
+          </Link>
+        </div>
+      </Container>
+    </Section>
   );
 }
 
