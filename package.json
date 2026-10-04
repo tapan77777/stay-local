@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "plan:migrate": "node scripts/plan-migrate.mjs"
   },
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",
+    "@neondatabase/serverless": "^1.2.0",
     "@radix-ui/react-slot": "^1.3.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/site/navbar";
-import { Footer } from "@/components/site/footer";
+import { PublicNavbar, PublicFooter } from "@/components/site/public-chrome";
 import { JsonLd } from "@/components/site/jsonld";
 import { buildMetadata, orgJsonLd } from "@/lib/seo";
 import { site } from "@/lib/site";
@@ -58,11 +57,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-cream text-charcoal">
         <JsonLd data={orgJsonLd()} />
-        <Navbar />
+        <PublicNavbar />
         <main id="main" className="flex-1">
           {children}
         </main>
-        <Footer />
+        <PublicFooter />
       </body>
     </html>
   );
