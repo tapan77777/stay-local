@@ -1,11 +1,11 @@
+import { JourneyTimeline } from "@/components/plan/journey-timeline";
 import { PlanShell } from "@/components/plan/plan-shell";
-import { TripHome } from "@/components/plan/trip-home";
 import {
   authenticatePlan,
   loadPlanOverview,
 } from "@/lib/plan/customer-view";
 
-export default async function PlanPage({
+export default async function JourneyPage({
   params,
 }: {
   params: Promise<{ token: string }>;
@@ -24,11 +24,10 @@ export default async function PlanPage({
       travelerDisplayName={plan.customer?.name || session.name}
       whatsappContact={plan.whatsappContact}
     >
-      <TripHome
+      <JourneyTimeline
         token={token}
-        plan={plan}
+        tripTitle={plan.title}
         destinations={overview.destinations}
-        totalNights={overview.totalNights}
       />
     </PlanShell>
   );
