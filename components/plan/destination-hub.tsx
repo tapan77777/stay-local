@@ -141,7 +141,9 @@ export function DestinationHub({
                 src={d.heroImageUrl}
                 alt=""
                 loading="eager"
+                fetchPriority="high"
                 decoding="async"
+                sizes="(min-width: 1024px) 1024px, 100vw"
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -230,7 +232,7 @@ export function DestinationHub({
                 >
                   <Link
                     href={`/plan/${token}/destinations/${d.id}/${tile.key}`}
-                    className="group flex h-full items-start gap-4 rounded-2xl border border-border bg-white p-4 transition-colors hover:border-brand-green/50 sm:p-5"
+                    className="group flex h-full items-start gap-4 rounded-2xl border border-border bg-white p-4 transition-colors hover:border-brand-green/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green sm:p-5"
                   >
                     <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-cream-warm text-brand-green-dark">
                       <tile.icon size={16} strokeWidth={1.8} />
@@ -275,7 +277,7 @@ export function DestinationHub({
             {prev ? (
               <Link
                 href={`/plan/${token}/destinations/${prev.id}`}
-                className="group flex flex-1 items-center gap-3 rounded-2xl border border-border bg-white p-4 transition-colors hover:border-brand-green/40"
+                className="group flex flex-1 items-center gap-3 rounded-2xl border border-border bg-white p-4 transition-colors hover:border-brand-green/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
               >
                 <ArrowLeft
                   size={16}
@@ -294,7 +296,7 @@ export function DestinationHub({
             {next ? (
               <Link
                 href={`/plan/${token}/destinations/${next.id}`}
-                className="group flex flex-1 items-center gap-3 rounded-2xl border border-border bg-white p-4 text-right transition-colors hover:border-brand-green/40"
+                className="group flex flex-1 items-center gap-3 rounded-2xl border border-border bg-white p-4 text-right transition-colors hover:border-brand-green/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
@@ -316,7 +318,7 @@ export function DestinationHub({
 
       <section className="mx-auto mt-12 max-w-2xl px-5 sm:px-6">
         <CinematicReveal y={14}>
-          <div className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-brand-green-light/70 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col items-start gap-3 rounded-2xl bg-brand-green-light/70 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-serif text-[17px] text-charcoal">
                 Something unclear about {d.name}?

@@ -125,7 +125,7 @@ export function PlanShell({
               <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-brand-green-dark">
                 {name ? `${name}'s journey` : "Your journey"}
               </span>
-              <span className="block truncate font-serif text-[15px] leading-tight text-charcoal lg:text-base">
+              <span className="block line-clamp-1 font-serif text-[15px] leading-tight text-charcoal lg:text-base">
                 {tripTitle || "Your India plan"}
               </span>
             </span>
@@ -175,7 +175,7 @@ function PlanSidebar({ token, pathname }: { token: string; pathname: string }) {
                   href={item.href(token)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green",
                     active
                       ? "bg-white text-charcoal shadow-[0_1px_2px_rgba(20,30,25,0.04)]"
                       : "text-charcoal-soft hover:bg-white/60 hover:text-charcoal"
@@ -222,7 +222,7 @@ function PlanBottomNav({
                 href={item.href(token)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-[52px] w-full flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition-colors",
+                  "flex min-h-[52px] w-full flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green",
                   active
                     ? "text-brand-green-dark"
                     : "text-muted hover:text-charcoal"

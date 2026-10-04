@@ -150,7 +150,7 @@ export function TripHome({
             </h2>
             <Link
               href={`/plan/${token}/destinations/${upNext.id}`}
-              className="group mt-4 block overflow-hidden rounded-2xl border border-border bg-white"
+              className="group mt-4 block overflow-hidden rounded-2xl border border-border bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
             >
               <div className="relative aspect-[16/9] w-full bg-cream">
                 {upNext.heroImageUrl ? (
@@ -158,8 +158,9 @@ export function TripHome({
                   <img
                     src={upNext.heroImageUrl}
                     alt=""
-                    loading="eager"
+                    loading="lazy"
                     decoding="async"
+                    sizes="(min-width: 640px) 672px, 100vw"
                     className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                   />
                 ) : (
@@ -250,7 +251,9 @@ function HeroBlock({
               src={heroImage}
               alt=""
               loading="eager"
+              fetchPriority="high"
               decoding="async"
+              sizes="(min-width: 1024px) 1024px, 100vw"
               className="h-full w-full object-cover"
             />
           ) : (
@@ -327,7 +330,7 @@ function DestinationQuickRow({
   return (
     <Link
       href={`/plan/${token}/destinations/${d.id}`}
-      className="group flex items-center gap-4 rounded-2xl border border-border bg-white p-4 transition-colors hover:border-brand-green/50 sm:p-5"
+      className="group flex items-center gap-4 rounded-2xl border border-border bg-white p-4 transition-colors hover:border-brand-green/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green sm:p-5"
     >
       <span
         aria-hidden
