@@ -7,6 +7,7 @@ import {
   motion,
   useReducedMotion,
   useScroll,
+  useSpring,
   useTransform,
 } from "framer-motion";
 import { useRef, useState } from "react";
@@ -242,35 +243,170 @@ export function Hero() {
 }
 
 function TalkCard({ compact = false }: { compact?: boolean }) {
+  const reduced = useReducedMotion();
   const [portraitFailed, setPortraitFailed] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll-driven 3D depth. Scroll progress goes 0 as the card first enters
+  // from the bottom of the viewport → 1 as it exits the top. Spring-smoothed
+  // so motion feels like physical mass rather than snapped to scroll pixels —
+  // and so values settle to rest when the user stops scrolling (no idle float).
+  //
+  // Mobile (compact=true) uses a weaker range so the effect reads as
+  // "the card has depth" without the perspective-skew visible on small
+  // viewports or during one-handed vertical scrolling.
+  const { scrollYProgress } = useScroll({
+    target: cardRef as React.RefObject<HTMLElement>,
+    offset: ["start end", "end start"],
+  });
+  const smoothed = useSpring(scrollYProgress, {
+    stiffness: 60,
+    damping: 20,
+    mass: 0.5,
+  });
+
+  // Card shell transforms. The mobile range is roughly half the desktop range
+  // across each axis; scale peaks ever so slightly near the viewport midpoint.
+  const rotateX = useTransform(
+    smoothed,
+    [0, 1],
+    compact ? [-0.6, 0.6] : [-1.5, 1.5],
+  );
+  const rotateY = useTransform(
+    smoothed,
+    [0, 1],
+    compact ? [-0.4, 0.4] : [-1, 1],
+  );
+  const cardY = useTransform(
+    smoothed,
+    [0, 1],
+    compact ? [4, -4] : [8, -8],
+  );
+  const cardScale = useTransform(
+    smoothed,
+    [0, 0.5, 1],
+    compact ? [0.99, 1.005, 0.995] : [0.985, 1.01, 0.995],
+  );
+
+  // Portrait layer differential — image moves a touch slower than the shell
+  // and breathes a tiny scale. Combined with the card's rotation, this gives
+  // a subconscious sense of parallax between the frame and the photograph.
+  const imageY = useTransform(
+    smoothed,
+    [0, 1],
+    compact ? [-2, 2] : [-4, 4],
+  );
+  const imageScale = useTransform(
+    smoothed,
+    [0, 0.5, 1],
+    compact ? [1.015, 1.03, 1.015] : [1.02, 1.04, 1.02],
+  );
+
+  // Content layer — opposite 1px drift so the text/CTA appear anchored to
+  // the viewer while the shell tilts around them. Keeps copy perfectly
+  // legible; readers never notice the effect, they only feel depth.
+  const contentY = useTransform(
+    smoothed,
+    [0, 1],
+    compact ? [-1, 1] : [-2, 2],
+  );
+
+  const shellClass = compact
+    ? "overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_40px_rgba(20,30,25,0.06)]"
+    : "w-[300px] overflow-hidden rounded-3xl border border-white/40 bg-cream/95 text-charcoal shadow-[0_30px_80px_rgba(10,15,12,0.35)] backdrop-blur-md xl:w-[320px]";
+
+  // Reduced-motion branch: identical markup and dimensions, no transforms,
+  // no perspective wrapper (so there's no will-change / compositor cost).
+  if (reduced) {
+    return (
+      <div ref={cardRef} className={shellClass}>
+        <TalkCardInner
+          compact={compact}
+          portraitFailed={portraitFailed}
+          onPortraitError={() => setPortraitFailed(true)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
-      className={
-        compact
-          ? "overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_40px_rgba(20,30,25,0.06)]"
-          : "w-[300px] overflow-hidden rounded-3xl border border-white/40 bg-cream/95 text-charcoal shadow-[0_30px_80px_rgba(10,15,12,0.35)] backdrop-blur-md xl:w-[320px]"
-      }
+      ref={cardRef}
+      // Perspective lives on the outer wrapper so the card's 3D rotations
+      // read as camera-passing-object rather than a flat skew. Larger values
+      // ≈ longer focal length ≈ gentler depth. 1600px keeps the effect
+      // restrained even at the far end of the rotation range.
+      style={{ perspective: compact ? "1800px" : "1600px" }}
+      className="[transform-style:preserve-3d]"
     >
+      <motion.div
+        className={shellClass + " will-change-transform"}
+        style={{
+          rotateX,
+          rotateY,
+          y: cardY,
+          scale: cardScale,
+          transformStyle: "preserve-3d",
+        }}
+      >
+        <TalkCardInner
+          compact={compact}
+          portraitFailed={portraitFailed}
+          onPortraitError={() => setPortraitFailed(true)}
+          imageY={imageY}
+          imageScale={imageScale}
+          contentY={contentY}
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+function TalkCardInner({
+  compact,
+  portraitFailed,
+  onPortraitError,
+  imageY,
+  imageScale,
+  contentY,
+}: {
+  compact: boolean;
+  portraitFailed: boolean;
+  onPortraitError: () => void;
+  imageY?: ReturnType<typeof useTransform<number, number>>;
+  imageScale?: ReturnType<typeof useTransform<number, number>>;
+  contentY?: ReturnType<typeof useTransform<number, number>>;
+}) {
+  const motionEnabled = imageY !== undefined;
+  return (
+    <>
       {!portraitFailed && (
         <div className="relative aspect-[8/3] w-full overflow-hidden bg-cream-warm">
-          <Image
-            src="/images/tapan.jpg"
-            alt="Tapan, StayLocal founder"
-            fill
-            sizes={compact ? "(min-width: 640px) 480px, 92vw" : "(min-width: 1280px) 320px, 300px"}
-            className="object-cover"
-            style={{ objectPosition: "50% 28%" }}
-            priority
-            onError={(e) => {
-              // Diagnostic: surface load failures instead of silently hiding.
-              // Card still degrades gracefully (image band unmounts).
-              console.warn(
-                "[TalkCard] portrait failed to load at /images/tapan.jpg",
-                e,
-              );
-              setPortraitFailed(true);
-            }}
-          />
+          <motion.div
+            className="absolute inset-0"
+            style={
+              motionEnabled ? { y: imageY, scale: imageScale } : undefined
+            }
+          >
+            <Image
+              src="/images/tapan.jpg"
+              alt="Tapan, StayLocal founder"
+              fill
+              sizes={compact ? "(min-width: 640px) 480px, 92vw" : "(min-width: 1280px) 320px, 300px"}
+              className="object-cover"
+              style={{ objectPosition: "50% 28%" }}
+              priority
+              onError={(e) => {
+                // Diagnostic: surface load failures instead of silently hiding.
+                // Card still degrades gracefully (image band unmounts).
+                console.warn(
+                  "[TalkCard] portrait failed to load at /images/tapan.jpg",
+                  e,
+                );
+                onPortraitError();
+              }}
+            />
+          </motion.div>
           {/* Soft fade at the seam so the photo blends into the content
               area rather than terminating on a hard horizontal line. */}
           <div
@@ -283,7 +419,10 @@ function TalkCard({ compact = false }: { compact?: boolean }) {
           />
         </div>
       )}
-      <div className={compact ? "p-5" : "p-5 xl:p-6"}>
+      <motion.div
+        className={compact ? "p-5" : "p-5 xl:p-6"}
+        style={motionEnabled ? { y: contentY } : undefined}
+      >
         <p className="eyebrow">Talk to Tapan</p>
         <p className="mt-2 font-serif text-[19px] leading-tight text-charcoal xl:text-xl">
           Not sure how to plan India?
@@ -323,7 +462,7 @@ function TalkCard({ compact = false }: { compact?: boolean }) {
             />
           </Link>
         </Button>
-      </div>
-    </div>
+      </motion.div>
+    </>
   );
 }
