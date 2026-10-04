@@ -3,7 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionValue,
+  type Variants,
+} from "framer-motion";
 import {
   useCallback,
   useEffect,
@@ -50,10 +58,27 @@ export function ExperiencesRail({
     getMqServerSnapshot,
   );
 
+  const sectionRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLUListElement | null>(null);
   const firstCardRef = useRef<HTMLLIElement | null>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
+
+  // Shared image depth: all card images scale and translate together as the
+  // rail passes vertically. One-time zoom-settle feel (1.08 → 1) in the first
+  // half, then a gentle reverse as it leaves. Keeps the horizontal auto-drift
+  // untouched — this is purely vertical page scroll.
+  const { scrollYProgress } = useScroll({
+    target: sectionRef as React.RefObject<HTMLElement>,
+    offset: ["start end", "end start"],
+  });
+  const smoothed = useSpring(scrollYProgress, {
+    stiffness: 90,
+    damping: 24,
+    mass: 0.3,
+  });
+  const imageScale = useTransform(smoothed, [0, 0.5, 1], [1.08, 1, 1.05]);
+  const imageY = useTransform(smoothed, [0, 1], ["-4%", "4%"]);
 
   // Track edge-of-rail state for the desktop arrows. Deferred to RAF so the
   // initial measurement runs off the render path.
@@ -174,6 +199,7 @@ export function ExperiencesRail({
 
   return (
     <Section tone="warm">
+      <div ref={sectionRef}>
       <Container>
         <div className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between sm:gap-10">
           <div className="max-w-2xl">
@@ -225,7 +251,13 @@ export function ExperiencesRail({
               className="w-[82vw] shrink-0 snap-start sm:w-[340px] lg:w-[360px] xl:w-[380px]"
             >
               <motion.div variants={item} className="h-full">
-                <ExperienceRailCard experience={e} priority={i < 3} />
+                <ExperienceRailCard
+                  experience={e}
+                  priority={i < 3}
+                  reduced={!!reduced}
+                  imageY={imageY}
+                  imageScale={imageScale}
+                />
               </motion.div>
             </li>
           ))}
@@ -245,6 +277,7 @@ export function ExperiencesRail({
           </Button>
         </div>
       </Container>
+      </div>
     </Section>
   );
 }
@@ -279,9 +312,15 @@ function RailButton({
 function ExperienceRailCard({
   experience,
   priority = false,
+  reduced,
+  imageY,
+  imageScale,
 }: {
   experience: Experience;
   priority?: boolean;
+  reduced: boolean;
+  imageY: MotionValue<string>;
+  imageScale: MotionValue<number>;
 }) {
   const image = experience.image ?? experience.heroImage;
   const state = extractState(experience.place) || experience.place;
@@ -295,14 +334,19 @@ function ExperienceRailCard({
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-cream-warm">
         {image ? (
-          <Image
-            src={image}
-            alt={`${destination}, ${state}`}
-            fill
-            sizes="(min-width: 1280px) 380px, (min-width: 1024px) 360px, (min-width: 640px) 340px, 82vw"
-            className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-            priority={priority}
-          />
+          <motion.div
+            className="absolute inset-0"
+            style={reduced ? undefined : { y: imageY, scale: imageScale }}
+          >
+            <Image
+              src={image}
+              alt={`${destination}, ${state}`}
+              fill
+              sizes="(min-width: 1280px) 380px, (min-width: 1024px) 360px, (min-width: 640px) 340px, 82vw"
+              className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+              priority={priority}
+            />
+          </motion.div>
         ) : (
           <div className="grid h-full place-items-center bg-brand-green-light/40 text-brand-green-dark">
             <span className="font-serif text-2xl">{destination}</span>

@@ -23,6 +23,7 @@ import {
   SectionHeading,
   SectionLede,
 } from "@/components/site/section";
+import { CinematicReveal } from "@/components/site/motion-primitives";
 import { Button } from "@/components/ui/button";
 import {
   services,
@@ -84,20 +85,6 @@ export function ServicesSelector() {
 
   const handleClose = useCallback(() => setOpenId(null), []);
 
-  const cardsContainer: Variants = reduced
-    ? { hidden: {}, show: {} }
-    : {
-        hidden: {},
-        show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
-      };
-
-  const cardItem: Variants = reduced
-    ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
-    : {
-        hidden: { opacity: 0, y: 22 },
-        show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
-      };
-
   const headingV: Variants = reduced
     ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
     : {
@@ -146,26 +133,30 @@ export function ServicesSelector() {
         </div>
       </Container>
 
-      {/* Cards — desktop grid */}
+      {/* Cards — desktop grid. Each card has its own viewport trigger so it
+          reveals as it enters view, not as part of a batched container
+          stagger. On a widescreen the row shows together; on smaller stacks
+          they settle in one by one. */}
       <Container className="mt-8 lg:mt-10">
-        <motion.div
-          className="hidden md:grid md:grid-cols-2 md:gap-5 xl:grid-cols-4 lg:gap-6"
-          variants={cardsContainer}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-80px 0px" }}
-        >
+        <div className="hidden md:grid md:grid-cols-2 md:gap-5 xl:grid-cols-4 lg:gap-6">
           {services.map((s, i) => (
-            <motion.div key={s.id} variants={cardItem} className="h-full">
+            <CinematicReveal
+              key={s.id}
+              className="h-full"
+              y={34}
+              scale={0.985}
+              duration={0.85}
+              margin="0px 0px -8% 0px"
+            >
               <ServiceCardTile
                 service={s}
                 copy={cardCopyById[s.id]}
                 index={i}
                 onOpen={() => setOpenId(s.id)}
               />
-            </motion.div>
+            </CinematicReveal>
           ))}
-        </motion.div>
+        </div>
       </Container>
 
       {/* Cards — mobile snap carousel (edge-to-edge) */}
@@ -176,12 +167,20 @@ export function ServicesSelector() {
               key={s.id}
               className="w-[82vw] shrink-0 snap-start sm:w-[320px]"
             >
-              <ServiceCardTile
-                service={s}
-                copy={cardCopyById[s.id]}
-                index={i}
-                onOpen={() => setOpenId(s.id)}
-              />
+              <CinematicReveal
+                className="h-full"
+                y={28}
+                scale={0.99}
+                duration={0.75}
+                margin="0px 0px -6% 0px"
+              >
+                <ServiceCardTile
+                  service={s}
+                  copy={cardCopyById[s.id]}
+                  index={i}
+                  onOpen={() => setOpenId(s.id)}
+                />
+              </CinematicReveal>
             </li>
           ))}
         </ul>

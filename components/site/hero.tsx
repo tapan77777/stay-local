@@ -265,50 +265,54 @@ function TalkCard({ compact = false }: { compact?: boolean }) {
     mass: 0.5,
   });
 
-  // Card shell transforms. The mobile range is roughly half the desktop range
-  // across each axis; scale peaks ever so slightly near the viewport midpoint.
+  // Card shell transforms. Input is remapped from the raw [0,1] scroll range
+  // to [0.1, 0.9] so the full motion range plays out during the window when
+  // the card is actually visible on screen. The desktop hero positions the
+  // card near the viewport bottom at page load (scroll progress already > 0),
+  // so without this remap the leading portion of the range would be wasted
+  // off-screen and the perceived motion would feel compressed.
   const rotateX = useTransform(
     smoothed,
-    [0, 1],
-    compact ? [-0.6, 0.6] : [-1.5, 1.5],
+    [0.1, 0.9],
+    compact ? [-1.2, 1.2] : [-3, 3],
   );
   const rotateY = useTransform(
     smoothed,
-    [0, 1],
-    compact ? [-0.4, 0.4] : [-1, 1],
+    [0.1, 0.9],
+    compact ? [-0.8, 0.8] : [-2, 2],
   );
   const cardY = useTransform(
     smoothed,
-    [0, 1],
-    compact ? [4, -4] : [8, -8],
+    [0.1, 0.9],
+    compact ? [9, -9] : [18, -18],
   );
   const cardScale = useTransform(
     smoothed,
-    [0, 0.5, 1],
-    compact ? [0.99, 1.005, 0.995] : [0.985, 1.01, 0.995],
+    [0.1, 0.5, 0.9],
+    compact ? [0.985, 1.01, 0.99] : [0.97, 1.02, 0.985],
   );
 
-  // Portrait layer differential — image moves a touch slower than the shell
-  // and breathes a tiny scale. Combined with the card's rotation, this gives
-  // a subconscious sense of parallax between the frame and the photograph.
+  // Portrait layer differential — image parallaxes against the shell and
+  // breathes a small scale. The deliberately larger range (vs card shell Y)
+  // reads as the photograph being physically set back from the card frame.
   const imageY = useTransform(
     smoothed,
-    [0, 1],
-    compact ? [-2, 2] : [-4, 4],
+    [0.1, 0.9],
+    compact ? [-5, 5] : [-10, 10],
   );
   const imageScale = useTransform(
     smoothed,
-    [0, 0.5, 1],
-    compact ? [1.015, 1.03, 1.015] : [1.02, 1.04, 1.02],
+    [0.1, 0.5, 0.9],
+    compact ? [1.025, 1.05, 1.025] : [1.03, 1.06, 1.03],
   );
 
-  // Content layer — opposite 1px drift so the text/CTA appear anchored to
-  // the viewer while the shell tilts around them. Keeps copy perfectly
-  // legible; readers never notice the effect, they only feel depth.
+  // Content layer — small opposite drift so copy appears anchored to the
+  // viewer while the shell tilts and the portrait parallaxes around it.
+  // Keeps text perfectly legible; the brain reads it as depth, not motion.
   const contentY = useTransform(
     smoothed,
-    [0, 1],
-    compact ? [-1, 1] : [-2, 2],
+    [0.1, 0.9],
+    compact ? [-2, 2] : [-4, 4],
   );
 
   const shellClass = compact
@@ -333,10 +337,11 @@ function TalkCard({ compact = false }: { compact?: boolean }) {
     <div
       ref={cardRef}
       // Perspective lives on the outer wrapper so the card's 3D rotations
-      // read as camera-passing-object rather than a flat skew. Larger values
-      // ≈ longer focal length ≈ gentler depth. 1600px keeps the effect
-      // restrained even at the far end of the rotation range.
-      style={{ perspective: compact ? "1800px" : "1600px" }}
+      // read as camera-passing-object rather than a flat skew. Smaller values
+      // ≈ shorter focal length ≈ stronger depth cue. 1200px gives a visible
+      // but restrained parallax feel on desktop; mobile uses a longer focal
+      // length (1500px) so the tilt stays gentle on small viewports.
+      style={{ perspective: compact ? "1500px" : "1200px" }}
       className="[transform-style:preserve-3d]"
     >
       <motion.div

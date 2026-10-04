@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Container } from "@/components/site/container";
 import {
@@ -36,9 +43,26 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 export function TravelStyles() {
   const reduced = useReducedMotion();
+  const sectionRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const firstGroupRef = useRef<HTMLDivElement | null>(null);
   const pausedRef = useRef(false);
+
+  // Shared parallax: all card images translate together as the section crosses
+  // the viewport vertically. Each image inside the horizontal marquee uses
+  // this same motion value, so the row reads as a single depth layer rather
+  // than N independently-parallaxing images.
+  const { scrollYProgress } = useScroll({
+    target: sectionRef as React.RefObject<HTMLElement>,
+    offset: ["start end", "end start"],
+  });
+  const smoothed = useSpring(scrollYProgress, {
+    stiffness: 90,
+    damping: 24,
+    mass: 0.3,
+  });
+  const imageY = useTransform(smoothed, [0, 1], ["-5%", "5%"]);
+  const imageScale = useTransform(smoothed, [0, 0.5, 1], [1.08, 1, 1.06]);
 
   // Auto-scroll driver: browser handles user swipe/drag via overflow-x-auto,
   // and we advance scrollLeft each frame. Wrap when scrollLeft passes the
@@ -79,7 +103,8 @@ export function TravelStyles() {
 
   return (
     <Section tone="cream" className="overflow-hidden border-b border-border">
-      <Container>
+      <div ref={sectionRef}>
+        <Container>
         <div className="max-w-2xl">
           <SectionEyebrow>Start with what you love</SectionEyebrow>
           <SectionHeading className="mt-3">
@@ -116,7 +141,14 @@ export function TravelStyles() {
               className="flex shrink-0 gap-5 pl-5 pr-5 sm:pl-7 sm:pr-6 lg:gap-6 lg:pl-10 lg:pr-6"
             >
               {styles.map((s, i) => (
-                <TravelCard key={s.slug} style={s} priority={i < 3} />
+                <TravelCard
+                  key={s.slug}
+                  style={s}
+                  priority={i < 3}
+                  reduced={!!reduced}
+                  imageY={imageY}
+                  imageScale={imageScale}
+                />
               ))}
             </div>
             {/* Duplicate set for the seamless marquee loop. Rendered always
@@ -127,7 +159,14 @@ export function TravelStyles() {
               aria-hidden="true"
             >
               {styles.map((s) => (
-                <TravelCard key={`dup-${s.slug}`} style={s} duplicate />
+                <TravelCard
+                  key={`dup-${s.slug}`}
+                  style={s}
+                  duplicate
+                  reduced={!!reduced}
+                  imageY={imageY}
+                  imageScale={imageScale}
+                />
               ))}
             </div>
           </div>
@@ -140,6 +179,7 @@ export function TravelStyles() {
           the $10 call — we&apos;ll shape them into a real route.
         </p>
       </Container>
+      </div>
     </Section>
   );
 }
@@ -148,10 +188,16 @@ function TravelCard({
   style,
   priority,
   duplicate,
+  reduced,
+  imageY,
+  imageScale,
 }: {
   style: Style;
   priority?: boolean;
   duplicate?: boolean;
+  reduced: boolean;
+  imageY: MotionValue<string>;
+  imageScale: MotionValue<number>;
 }) {
   const [failed, setFailed] = useState(false);
   const src = `/images/travel-styles/${style.slug}.jpg`;
@@ -187,16 +233,21 @@ function TravelCard({
             className="absolute inset-0 bg-[radial-gradient(120%_100%_at_20%_10%,rgba(255,255,255,0.14),transparent_55%),linear-gradient(160deg,var(--tw-gradient-stops))] from-brand-green-dark via-brand-green to-brand-green-dark"
           />
         ) : (
-          <Image
-            src={src}
-            alt={duplicate ? "" : `${style.label} — ${style.desc}`}
-            fill
-            priority={priority && !duplicate}
-            loading={priority && !duplicate ? undefined : "lazy"}
-            sizes="(min-width: 1024px) 380px, (min-width: 640px) 360px, 82vw"
-            className="object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-            onError={() => setFailed(true)}
-          />
+          <motion.div
+            className="absolute inset-0"
+            style={reduced ? undefined : { y: imageY, scale: imageScale }}
+          >
+            <Image
+              src={src}
+              alt={duplicate ? "" : `${style.label} — ${style.desc}`}
+              fill
+              priority={priority && !duplicate}
+              loading={priority && !duplicate ? undefined : "lazy"}
+              sizes="(min-width: 1024px) 380px, (min-width: 640px) 360px, 82vw"
+              className="object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+              onError={() => setFailed(true)}
+            />
+          </motion.div>
         )}
         {/* Soft photographic fade at the seam — cream card colour fades to
             transparent over ~32px so the boundary reads as a gentle blend

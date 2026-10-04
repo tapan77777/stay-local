@@ -3,8 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { useState } from "react";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionValue,
+  type Variants,
+} from "framer-motion";
+import { useRef, useState } from "react";
 import { Container } from "@/components/site/container";
 import { Section, SectionEyebrow } from "@/components/site/section";
 import { ConsultCta } from "@/components/site/consult-cta";
@@ -19,12 +27,29 @@ const trips = ["Mountains", "Treks", "Villages", "Coasts"] as const;
 
 export function FounderNote() {
   const reduced = useReducedMotion();
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll-driven depth for the primary portrait — starts slightly deeper
+  // (scale 1.08) at section entry, settles at 1 near the middle, drifts back
+  // out as it leaves. Reads as cinematic depth, not aggressive zoom.
+  const { scrollYProgress } = useScroll({
+    target: sectionRef as React.RefObject<HTMLElement>,
+    offset: ["start end", "end start"],
+  });
+  const smoothed = useSpring(scrollYProgress, {
+    stiffness: 90,
+    damping: 24,
+    mass: 0.3,
+  });
+  const portraitScale = useTransform(smoothed, [0, 0.5, 1], [1.08, 1, 1.04]);
+  const portraitY = useTransform(smoothed, [0, 1], ["-4%", "4%"]);
+  const secondaryY = useTransform(smoothed, [0, 1], ["6%", "-6%"]);
 
   const container = reduced
     ? { hidden: {}, show: {} }
     : {
         hidden: {},
-        show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
+        show: { transition: { staggerChildren: 0.12, delayChildren: 0.08 } },
       };
 
   const fadeUp = reduced
@@ -62,6 +87,7 @@ export function FounderNote() {
 
   return (
     <Section tone="warm">
+      <div ref={sectionRef}>
       <Container>
         <motion.div
           variants={container}
@@ -72,7 +98,14 @@ export function FounderNote() {
         >
           {/* Left — photo composition */}
           <div className="order-1">
-            <PhotoStory primaryV={primaryV} secondaryV={secondaryV} />
+            <PhotoStory
+              primaryV={primaryV}
+              secondaryV={secondaryV}
+              reduced={!!reduced}
+              portraitScale={portraitScale}
+              portraitY={portraitY}
+              secondaryY={secondaryY}
+            />
           </div>
 
           {/* Right — story */}
@@ -165,6 +198,7 @@ export function FounderNote() {
           </div>
         </motion.div>
       </Container>
+      </div>
     </Section>
   );
 }
@@ -179,9 +213,17 @@ export function FounderNote() {
 function PhotoStory({
   primaryV,
   secondaryV,
+  reduced,
+  portraitScale,
+  portraitY,
+  secondaryY,
 }: {
   primaryV: Variants;
   secondaryV: Variants;
+  reduced: boolean;
+  portraitScale: MotionValue<number>;
+  portraitY: MotionValue<string>;
+  secondaryY: MotionValue<string>;
 }) {
   const [primaryFailed, setPrimaryFailed] = useState(false);
 
@@ -199,37 +241,49 @@ function PhotoStory({
         variants={primaryV}
         className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-border/60 bg-cream-warm shadow-[0_24px_60px_rgba(20,30,25,0.10)]"
       >
-        <Image
-          src={primarySrc}
-          alt={primaryAlt}
-          fill
-          sizes="(min-width: 1024px) 42vw, 92vw"
-          className="object-cover"
-          style={{ objectPosition: primaryFailed ? "50% 50%" : "50% 28%" }}
-          priority
-          onError={() => {
-            if (!primaryFailed) {
-              console.warn(
-                "[FounderNote] /images/tapan.jpg failed to load — falling back to travel photo",
-              );
-              setPrimaryFailed(true);
-            }
-          }}
-        />
+        <motion.div
+          className="absolute inset-0"
+          style={reduced ? undefined : { y: portraitY, scale: portraitScale }}
+        >
+          <Image
+            src={primarySrc}
+            alt={primaryAlt}
+            fill
+            sizes="(min-width: 1024px) 42vw, 92vw"
+            className="object-cover"
+            style={{ objectPosition: primaryFailed ? "50% 50%" : "50% 28%" }}
+            priority
+            onError={() => {
+              if (!primaryFailed) {
+                console.warn(
+                  "[FounderNote] /images/tapan.jpg failed to load — falling back to travel photo",
+                );
+                setPrimaryFailed(true);
+              }
+            }}
+          />
+        </motion.div>
       </motion.figure>
 
-      {/* Secondary overlapping image — bottom-right editorial breakout */}
+      {/* Secondary overlapping image — bottom-right editorial breakout.
+          Drifts in the opposite direction to the primary portrait so the
+          two layers read as separate depth planes. */}
       <motion.figure
         variants={secondaryV}
         className="absolute -bottom-2 right-3 aspect-[4/3] w-[54%] overflow-hidden rounded-2xl border border-border/60 bg-cream-warm shadow-[0_18px_45px_rgba(20,30,25,0.14)] sm:-bottom-4 sm:right-5 sm:w-[48%] lg:-bottom-6 lg:right-6 lg:w-[54%]"
       >
-        <Image
-          src="/images/travel-styles/mountains.jpg"
-          alt="A Himalayan range — the kind of route Tapan travels himself"
-          fill
-          sizes="(min-width: 1024px) 22vw, 44vw"
-          className="object-cover"
-        />
+        <motion.div
+          className="absolute inset-0"
+          style={reduced ? undefined : { y: secondaryY }}
+        >
+          <Image
+            src="/images/travel-styles/mountains.jpg"
+            alt="A Himalayan range — the kind of route Tapan travels himself"
+            fill
+            sizes="(min-width: 1024px) 22vw, 44vw"
+            className="object-cover"
+          />
+        </motion.div>
       </motion.figure>
     </div>
   );

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { primaryCta } from "@/lib/site";
 import { services, type ServiceTier } from "@/lib/services";
+import { useSectionProgress, EASE } from "@/components/site/motion-primitives";
 
 // ---------- Types ----------
 
@@ -162,8 +163,6 @@ const planCopy: readonly PlanPresentation[] = [
 
 const plans: readonly Plan[] = planCopy.map(buildPlan);
 
-const EASE = [0.22, 1, 0.36, 1] as const;
-
 // ---------- Section ----------
 
 export function IndependentTravel() {
@@ -190,89 +189,18 @@ export function IndependentTravel() {
         </div>
       </Container>
 
-      {/* --------- STEP CARDS (FIRST) --------- */}
+      {/* --------- SCROLL-DRIVEN TIMELINE --------- */}
 
       <Container>
-        {/* Progress indicator (desktop) */}
-        <div
-          className="mt-14 hidden md:flex md:items-center md:gap-3 lg:mt-20"
-          role="tablist"
-          aria-label="Steps"
-        >
-          {steps.map((s, i) => {
-            const isActive = active === i;
-            return (
-              <button
-                key={s.n}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                aria-controls={`step-panel-${s.n}`}
-                id={`step-tab-${s.n}`}
-                onClick={() => setActive(i)}
-                className="group flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-4 focus-visible:ring-offset-cream-warm rounded-full"
-              >
-                <span
-                  className={
-                    "h-[3px] rounded-full transition-all duration-500 " +
-                    (isActive
-                      ? "w-10 bg-brand-green"
-                      : "w-6 bg-charcoal/15 group-hover:bg-charcoal/30")
-                  }
-                />
-                <span
-                  className={
-                    "text-[11px] font-semibold uppercase tracking-[0.2em] transition-colors " +
-                    (isActive ? "text-brand-green-dark" : "text-charcoal/50")
-                  }
-                >
-                  {s.n}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Desktop step grid */}
-        <div className="mt-8 hidden gap-5 md:grid md:grid-cols-3 lg:mt-10 lg:gap-6">
-          {steps.map((s, i) => (
-            <StepCard
-              key={s.n}
-              step={s}
-              active={active === i}
-              onActivate={() => setActive(i)}
-              reduced={!!reduced}
-            />
-          ))}
-        </div>
+        <Timeline
+          steps={steps}
+          active={active}
+          onActivate={setActive}
+          reduced={!!reduced}
+        />
       </Container>
 
-      {/* Mobile horizontal snap scroller for steps */}
-      <div className="mt-12 md:hidden">
-        <ul className="flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <li aria-hidden className="w-4 shrink-0 sm:w-6" />
-          {steps.map((s, i) => (
-            <li key={s.n} className="w-[86vw] shrink-0 snap-start">
-              <StepCard
-                step={s}
-                active={active === i}
-                onActivate={() => setActive(i)}
-                reduced={!!reduced}
-                mobile
-              />
-            </li>
-          ))}
-          <li aria-hidden className="w-4 shrink-0 sm:w-6" />
-        </ul>
-        <Container className="mt-4">
-          <p className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-muted">
-            <span className="h-px w-6 bg-muted/60" />
-            Swipe through the steps
-          </p>
-        </Container>
-      </div>
-
-      {/* --------- PRICING PREVIEW (THEN) --------- */}
+      {/* --------- PRICING PREVIEW --------- */}
 
       <PricingPreview reduced={!!reduced} />
 
@@ -305,6 +233,244 @@ export function IndependentTravel() {
         </div>
       </Container>
     </Section>
+  );
+}
+
+// ---------- Timeline ----------
+// Scroll-driven vertical sequence. A single vertical rail runs through the
+// whole list; the green fill scales with section scroll progress. Each row
+// has its own IntersectionObserver so the active node + big number can
+// highlight as the step reaches the viewport midband.
+//
+// Mobile uses the same layout at a tighter density — no horizontal scroller,
+// no scroll hijacking.
+
+function Timeline({
+  steps,
+  active,
+  onActivate,
+  reduced,
+}: {
+  steps: readonly Step[];
+  active: number;
+  onActivate: (i: number) => void;
+  reduced: boolean;
+}) {
+  const timelineRef = useRef<HTMLOListElement | null>(null);
+  const progress = useSectionProgress(timelineRef, ["start 70%", "end 60%"]);
+
+  return (
+    <ol
+      ref={timelineRef}
+      className="relative mt-12 pl-10 sm:mt-16 sm:pl-14 lg:mt-20 lg:pl-20"
+      aria-label="How StayLocal works"
+    >
+      {/* Rail — neutral backdrop */}
+      <div
+        aria-hidden
+        className="absolute left-[14px] top-3 bottom-3 w-px bg-charcoal/15 sm:left-[20px] lg:left-[26px]"
+      />
+      {/* Rail — green fill, scaleY tied to section progress */}
+      <motion.div
+        aria-hidden
+        className="absolute left-[14px] top-3 bottom-3 w-px origin-top bg-brand-green sm:left-[20px] lg:left-[26px]"
+        style={reduced ? { scaleY: 0 } : { scaleY: progress }}
+      />
+
+      {steps.map((s, i) => (
+        <TimelineRow
+          key={s.n}
+          step={s}
+          index={i}
+          active={active === i}
+          onActivate={() => onActivate(i)}
+          reduced={reduced}
+          isLast={i === steps.length - 1}
+        />
+      ))}
+    </ol>
+  );
+}
+
+function TimelineRow({
+  step,
+  index,
+  active,
+  onActivate,
+  reduced,
+  isLast,
+}: {
+  step: Step;
+  index: number;
+  active: boolean;
+  onActivate: () => void;
+  reduced: boolean;
+  isLast: boolean;
+}) {
+  const rowRef = useRef<HTMLLIElement | null>(null);
+
+  // Keep onActivate in a ref so the IO effect subscribes once per mount
+  // instead of re-subscribing on every parent re-render (active state
+  // changes re-render Timeline → new closure per row).
+  const onActivateRef = useRef(onActivate);
+  useEffect(() => {
+    onActivateRef.current = onActivate;
+  }, [onActivate]);
+
+  // Activates the row when its midpoint sits in the viewport midband.
+  // `rootMargin: -40% top / -40% bottom` means the row has to be within the
+  // middle 20% of the viewport to count as "active" — gives one clear
+  // active step at a time instead of flickering between neighbours.
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            onActivateRef.current();
+            return;
+          }
+        }
+      },
+      { rootMargin: "-40% 0px -40% 0px", threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <li
+      ref={rowRef}
+      id={`step-${step.n}`}
+      className={isLast ? "" : "pb-14 lg:pb-20"}
+    >
+      {/* Node — sits on top of the rail at this row's top */}
+      <motion.span
+        aria-hidden
+        className="absolute -ml-[21px] mt-[2px] block h-[18px] w-[18px] rounded-full border-2 border-charcoal/25 bg-cream-warm sm:-ml-[27px] sm:h-[22px] sm:w-[22px] lg:-ml-[33px] lg:h-[26px] lg:w-[26px]"
+        animate={
+          reduced
+            ? undefined
+            : {
+                borderColor: active
+                  ? "rgba(16, 122, 86, 0.95)"
+                  : "rgba(20, 30, 25, 0.25)",
+                scale: active ? 1.08 : 1,
+              }
+        }
+        transition={{ duration: 0.55, ease: EASE }}
+      >
+        <motion.span
+          className="absolute inset-[3px] block rounded-full bg-brand-green sm:inset-[4px] lg:inset-[5px]"
+          animate={
+            reduced
+              ? undefined
+              : { opacity: active ? 1 : 0, scale: active ? 1 : 0.6 }
+          }
+          transition={{ duration: 0.55, ease: EASE }}
+        />
+      </motion.span>
+
+      {/* Big step number */}
+      <motion.p
+        className="font-serif text-[44px] leading-none tracking-tight sm:text-[56px] lg:text-[72px]"
+        animate={
+          reduced
+            ? { color: "rgba(20, 30, 25, 0.22)" }
+            : {
+                color: active
+                  ? "var(--color-brand-green-dark)"
+                  : "rgba(20, 30, 25, 0.22)",
+              }
+        }
+        transition={{ duration: 0.6, ease: EASE }}
+      >
+        {step.n}
+      </motion.p>
+
+      {/* Card content — reveals on viewport entry, settles after */}
+      <motion.article
+        onMouseEnter={reduced ? undefined : onActivate}
+        onFocus={onActivate}
+        tabIndex={0}
+        className="relative mt-4 overflow-hidden rounded-3xl border border-brand-green/15 bg-card p-6 shadow-[0_10px_30px_rgba(20,30,25,0.05)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 focus-visible:ring-offset-cream-warm sm:p-7 lg:p-8"
+        initial={reduced ? false : { opacity: 0, y: 36, scale: 0.985 }}
+        whileInView={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, margin: "0px 0px -12% 0px" }}
+        transition={{ duration: 0.9, ease: EASE }}
+        animate={
+          reduced
+            ? undefined
+            : {
+                boxShadow: active
+                  ? "0 24px 60px rgba(29,158,117,0.14)"
+                  : "0 10px 30px rgba(20,30,25,0.05)",
+                borderColor: active
+                  ? "rgba(29,158,117,0.3)"
+                  : "rgba(29,158,117,0.15)",
+              }
+        }
+      >
+        {/* Soft green glow when active */}
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute -inset-px rounded-3xl bg-[radial-gradient(80%_100%_at_20%_0%,rgba(29,158,117,0.16),transparent_60%)]"
+          animate={reduced ? undefined : { opacity: active ? 1 : 0 }}
+          transition={{ duration: 0.55, ease: EASE }}
+        />
+
+        <div className="relative flex flex-col">
+          <p className="font-serif text-xl leading-tight text-charcoal lg:text-[22px]">
+            {step.title}
+          </p>
+          <p className="mt-2.5 text-sm leading-relaxed text-charcoal-soft lg:text-[15px]">
+            {step.lead}
+          </p>
+
+          <ul className="mt-5 grid gap-2 sm:grid-cols-2">
+            {step.bullets.map((b, bi) => (
+              <motion.li
+                key={b}
+                className="flex items-start gap-2 text-[13px] leading-snug text-charcoal-soft"
+                initial={reduced ? false : { opacity: 0, y: 10 }}
+                whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "0px 0px -8% 0px" }}
+                transition={{
+                  duration: 0.5,
+                  ease: EASE,
+                  delay: reduced ? 0 : 0.1 + bi * 0.05,
+                }}
+              >
+                <Check
+                  size={13}
+                  strokeWidth={2.5}
+                  className="mt-[3px] shrink-0 text-brand-green"
+                />
+                <span>{b}</span>
+              </motion.li>
+            ))}
+          </ul>
+
+          <div className="mt-6 border-t border-brand-green/15 pt-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-green-dark">
+              You get
+            </p>
+            <p className="mt-1 font-serif text-lg leading-tight text-charcoal">
+              {step.outcome}
+            </p>
+          </div>
+        </div>
+
+        {/* Hidden focus target for keyboard users (equivalent of the old tab)  */}
+        <span className="sr-only">
+          Step {step.n} of {steps.length} — {step.title}
+        </span>
+        {/* `index` is referenced here so TS keeps the prop in-scope; it's used
+            for keyboard order/semantics via the DOM order of the ol. */}
+        <span data-step-index={index} className="hidden" />
+      </motion.article>
+    </li>
   );
 }
 
@@ -512,122 +678,6 @@ function PlanCard({ plan, reduced }: { plan: Plan; reduced: boolean }) {
           )}
 
           <div className="mt-auto" />
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ---------- Step card ----------
-
-function StepCard({
-  step,
-  active,
-  onActivate,
-  reduced,
-  mobile = false,
-}: {
-  step: Step;
-  active: boolean;
-  onActivate: () => void;
-  reduced: boolean;
-  mobile?: boolean;
-}) {
-  const bulletsVisible = mobile || reduced || active;
-
-  return (
-    <motion.div
-      onMouseEnter={reduced || mobile ? undefined : onActivate}
-      onFocus={onActivate}
-      onClick={onActivate}
-      role="tabpanel"
-      id={`step-panel-${step.n}`}
-      aria-labelledby={`step-tab-${step.n}`}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onActivate();
-        }
-      }}
-      className={
-        "group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-3xl border p-6 transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 focus-visible:ring-offset-cream-warm lg:p-7 " +
-        (active
-          ? "border-brand-green/25 bg-gradient-to-br from-brand-green/[0.08] via-cream to-brand-green-light/50 shadow-[0_20px_60px_rgba(29,158,117,0.14)]"
-          : "border-border bg-card/70 shadow-[0_8px_24px_rgba(20,30,25,0.04)]")
-      }
-      animate={
-        reduced
-          ? { scale: 1, opacity: 1, y: 0 }
-          : {
-              scale: mobile ? 1 : active ? 1 : 0.985,
-              opacity: mobile ? 1 : active ? 1 : 0.78,
-              y: !mobile && active ? -4 : 0,
-            }
-      }
-      transition={{ duration: 0.5, ease: EASE }}
-    >
-      {active && !reduced && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute -inset-px rounded-3xl bg-[radial-gradient(80%_100%_at_20%_0%,rgba(29,158,117,0.16),transparent_60%)]"
-        />
-      )}
-
-      <div className="relative flex flex-1 flex-col">
-        <motion.p
-          className="font-serif text-[64px] leading-none tracking-tight lg:text-[72px]"
-          animate={reduced ? { y: 0 } : { y: !mobile && active ? -2 : 0 }}
-          transition={{ duration: 0.5, ease: EASE }}
-          style={{
-            color: active
-              ? "var(--color-brand-green-dark)"
-              : "rgba(20, 30, 25, 0.22)",
-            transition: "color 500ms",
-          }}
-        >
-          {step.n}
-        </motion.p>
-
-        <p className="mt-4 font-serif text-xl leading-tight text-charcoal lg:text-[22px]">
-          {step.title}
-        </p>
-        <p className="mt-2.5 text-sm leading-relaxed text-charcoal-soft">
-          {step.lead}
-        </p>
-
-        <motion.ul
-          className="mt-5 space-y-2"
-          animate={
-            reduced
-              ? { opacity: 1, y: 0 }
-              : { opacity: bulletsVisible ? 1 : 0, y: bulletsVisible ? 0 : 8 }
-          }
-          transition={{ duration: 0.4, ease: EASE }}
-          aria-hidden={bulletsVisible ? undefined : "true"}
-        >
-          {step.bullets.map((b) => (
-            <li
-              key={b}
-              className="flex items-start gap-2 text-[13px] leading-snug text-charcoal-soft"
-            >
-              <Check
-                size={13}
-                strokeWidth={2.5}
-                className="mt-[3px] shrink-0 text-brand-green"
-              />
-              <span>{b}</span>
-            </li>
-          ))}
-        </motion.ul>
-
-        <div className="mt-auto border-t border-brand-green/15 pt-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-green-dark">
-            You get
-          </p>
-          <p className="mt-1 font-serif text-lg leading-tight text-charcoal">
-            {step.outcome}
-          </p>
         </div>
       </div>
     </motion.div>
