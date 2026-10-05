@@ -178,21 +178,29 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
     setSelectedPin(null);
   }, []);
 
+  // Keep the latest pins visible to the mount effect without retriggering it —
+  // the parent re-renders would otherwise destroy and recreate the whole map.
+  const pinsRef = useRef(pins);
+  useEffect(() => {
+    pinsRef.current = pins;
+  }, [pins]);
+
   // Mount the map exactly once. Pins are added in a separate effect so the
   // style load + marker lifecycle stay decoupled.
   useEffect(() => {
-    if (!containerRef.current) return;
-    const bounds = pinBoundsOrNull(pins);
+    const container = containerRef.current;
+    if (!container) return;
+    const initialBounds = pinBoundsOrNull(pinsRef.current);
     const map = new maplibregl.Map({
-      container: containerRef.current,
+      container,
       style: MAP_STYLE_URL,
       attributionControl: { compact: true },
-      bounds: bounds ?? undefined,
-      fitBoundsOptions: bounds
+      bounds: initialBounds ?? undefined,
+      fitBoundsOptions: initialBounds
         ? { padding: 60, maxZoom: 12, animate: false }
         : undefined,
-      center: bounds ? undefined : [78.9629, 20.5937], // India centroid fallback
-      zoom: bounds ? undefined : 4,
+      center: initialBounds ? undefined : [78.9629, 20.5937], // India centroid fallback
+      zoom: initialBounds ? undefined : 4,
       cooperativeGestures: false,
     });
     map.addControl(
@@ -202,15 +210,62 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
       }),
       "top-right",
     );
-    map.on("load", () => setReady(true));
+
+    // Primary ready signal: MapLibre's `load` fires once style + first viewport
+    // tiles are ready. On mobile Safari the container can briefly report 0×0
+    // on mount (dvh settles after the first paint), which leaves the map with
+    // a 0-sized canvas and `load` never fires. The ResizeObserver below pokes
+    // `resize()` as soon as a real size lands, which is what frees `load`.
+    const onLoad = () => setReady(true);
+    map.on("load", onLoad);
+    // Surface tile/style errors to the browser console so stuck-loading cases
+    // are debuggable from a real device rather than silent.
+    const onError = (e: unknown) => {
+      console.error("[plan-map] maplibre error", e);
+    };
+    map.on("error", onError);
+
+    // Observe the container so address-bar collapse (iOS) and the brief 0×0
+    // first frame both trigger a resize. Without this, MapLibre keeps a stale
+    // size cache and never finishes initial tile loading on some mobile
+    // browsers.
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => {
+        try {
+          map.resize();
+        } catch {
+          // map may already be removed during fast nav; ignore.
+        }
+      });
+      ro.observe(container);
+    }
+    // Belt-and-braces: one deferred resize on the next frame to flush the
+    // initial layout before the style finishes loading.
+    const raf = requestAnimationFrame(() => {
+      try {
+        map.resize();
+      } catch {
+        /* ignore */
+      }
+    });
+
     mapRef.current = map;
     return () => {
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+      map.off("load", onLoad);
+      map.off("error", onError);
       for (const m of markersRef.current) m.remove();
       markersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
-  }, [pins]);
+    // We intentionally mount the map once. New pins propagate through the
+    // marker + bounds effects below; the pinsRef above gives this effect
+    // access to the latest value for the initial fitBounds without listing
+    // pins as a dependency (which would destroy and recreate the map).
+  }, []);
 
   // Rebuild markers whenever the visible-pins set changes. MapLibre markers
   // are imperative, so we tear down and rebuild — fine at this scale.

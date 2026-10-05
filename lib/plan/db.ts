@@ -30,15 +30,18 @@ export function newPrivateToken(): string {
 }
 
 /**
- * Converts a Postgres DATE column value to a `yyyy-mm-dd` string (UTC).
+ * Converts a Postgres DATE column value to a `yyyy-mm-dd` string.
+ * The Neon driver parses DATE columns as a local-time midnight Date, so we
+ * use local-time getters here to preserve the stored calendar day across
+ * timezones. Downstream formatters then re-parse the string in UTC.
  * Returns null when the column is NULL.
  */
 export function dateToString(v: unknown): string | null {
   if (v == null) return null;
   if (v instanceof Date) {
-    const yyyy = v.getUTCFullYear();
-    const mm = String(v.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(v.getUTCDate()).padStart(2, "0");
+    const yyyy = v.getFullYear();
+    const mm = String(v.getMonth() + 1).padStart(2, "0");
+    const dd = String(v.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   }
   if (typeof v === "string") return v.slice(0, 10);

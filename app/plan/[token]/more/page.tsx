@@ -1,6 +1,7 @@
-import { PlanPlaceholder } from "@/components/plan/plan-placeholder";
 import { PlanShell } from "@/components/plan/plan-shell";
-import { authenticatePlan } from "@/lib/plan/customer-view";
+import { MoreOverview } from "@/components/plan/more-overview";
+import { authenticatePlan, loadPlanOverview } from "@/lib/plan/customer-view";
+import { listPlanDocuments } from "@/lib/plan/documents";
 
 export default async function PlanMorePage({
   params,
@@ -12,6 +13,10 @@ export default async function PlanMorePage({
   if (!auth.ok) return auth.render;
 
   const { plan, session } = auth;
+  const [documents, overview] = await Promise.all([
+    listPlanDocuments(plan.id),
+    loadPlanOverview(plan.id),
+  ]);
 
   return (
     <PlanShell
@@ -20,13 +25,11 @@ export default async function PlanMorePage({
       travelerDisplayName={plan.customer?.name || session.name}
       whatsappContact={plan.whatsappContact}
     >
-      <PlanPlaceholder
+      <MoreOverview
         token={token}
-        eyebrow="More"
-        title="Everything else lives here."
-        description="Documents, trip settings, and the quickest way to reach Tapan. The dedicated screens for each are landing soon — in the meantime WhatsApp is the fastest way to get me."
-        whatsappContact={plan.whatsappContact}
-        tripTitle={plan.title}
+        plan={plan}
+        documents={documents}
+        totalNights={overview.totalNights}
       />
     </PlanShell>
   );
