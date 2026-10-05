@@ -1,9 +1,14 @@
 import "server-only";
 import type { ReactNode } from "react";
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { getPlanByToken, evaluatePlanAccess } from "./plans";
 import { getPlanSession } from "./plan-access";
-import { authorizeDevice } from "./devices";
+import {
+  findActiveDeviceByCookie,
+  readDeniedSignal,
+  touchDeviceLastSeen,
+} from "./devices";
 import {
   listDestinations,
   listDestinationModuleCounts,
@@ -34,10 +39,27 @@ export type PlanAuthResult =
   | { ok: false; render: ReactNode };
 
 /**
- * Validates the token path parameter against our access rules in the same
- * order the original page.tsx used — plan existence, status/window, cookie
- * session. Memoized per-request so the layout and child page components can
- * each call it without issuing duplicate DB queries.
+ * Read-only plan + device authentication for Server Components.
+ *
+ * Runs the same ordered checks as before — plan exists, status/window,
+ * plan session cookie — then adds a *read-only* device check: the device
+ * cookie is hashed and looked up; if it matches an active row we touch
+ * `last_seen_at` (SQL UPDATE, no cookie mutation) and admit the request.
+ *
+ * When the device cookie is missing or stale, we must register it, but
+ * cookie writes are forbidden during Server Component rendering in
+ * Next.js 16. So we `redirect()` the browser to the bootstrap Route
+ * Handler at `/plan/<token>/device`, which runs the atomic authorize,
+ * sets the device cookie on its response, and redirects back to the
+ * originally requested URL (via Referer).
+ *
+ * When the bootstrap has just denied access (limit reached or revoked
+ * device), it drops a short-lived `sl_dev_denied_<pid>` signal cookie
+ * that we read here to render the polished `PlanDeviceLimit` state
+ * without looping back to the bootstrap.
+ *
+ * Memoized per-request so the layout and child page components can each
+ * call it without issuing duplicate DB queries.
  */
 export const authenticatePlan = cache(async function authenticatePlan(
   token: string
@@ -56,31 +78,41 @@ export const authenticatePlan = cache(async function authenticatePlan(
   if (!session) {
     return { ok: false, render: <PlanAccessForm token={token} /> };
   }
-  // Second gate: device registry. A valid plan session cookie proves the
-  // customer knows the code, but we also require the device to be one of
-  // the plan's registered devices (up to max_devices). Enforcing this here
-  // — inside the request-scoped memoized helper — means every /plan/[token]/*
-  // sub-route runs the check once per request, so a direct hit on a nested
-  // URL cannot bypass the limit.
-  const auth = await authorizeDevice(plan.id);
-  if (!auth.ok) {
+
+  // Device gate — read-only.
+  const device = await findActiveDeviceByCookie(plan.id);
+  if (device) {
+    // No cookie mutation here — just an UPDATE row.
+    await touchDeviceLastSeen(device.id);
+    return {
+      ok: true,
+      plan,
+      session: { pid: session.pid, name: session.name },
+    };
+  }
+
+  // No valid device cookie. If the bootstrap just denied us, render the
+  // polished limit state instead of looping back to it.
+  const denied = await readDeniedSignal(plan.id);
+  if (denied) {
     return {
       ok: false,
       render: (
         <PlanDeviceLimit
           planTitle={plan.title || "your trip"}
-          activeCount={auth.activeCount}
-          maxDevices={auth.maxDevices}
+          activeCount={denied.activeCount}
+          maxDevices={denied.maxDevices}
           whatsappContact={plan.whatsappContact}
         />
       ),
     };
   }
-  return {
-    ok: true,
-    plan,
-    session: { pid: session.pid, name: session.name },
-  };
+
+  // Otherwise, hand off to the Route Handler to atomically register this
+  // device (or set the denial signal, which we'll pick up on the next
+  // render). The Referer header carries the original URL so the handler
+  // can send the browser back to it.
+  redirect(`/plan/${token}/device`);
 });
 
 export interface DestinationWithCounts {

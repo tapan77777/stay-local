@@ -19,7 +19,14 @@ import {
   updatePlanMaxDevices,
   evaluatePlanAccess,
 } from "./plans";
-import { revokeAllDevices, revokeDevice } from "./devices";
+import {
+  applyAuthorizeOutcomeToCookieJar,
+  authorizeDeviceAtomic,
+  deviceCookieName,
+  revokeAllDevices,
+  revokeDevice,
+} from "./devices";
+import { headers, cookies } from "next/headers";
 import { createPlanSession } from "./plan-access";
 import {
   MAX_MAX_DEVICES,
@@ -216,6 +223,19 @@ export async function unlockPlanAction(
     return { error: "Your StayLocal plan isn't available right now." };
   }
   await createPlanSession(plan.id, name);
+
+  // Register this device as part of the unlock. Server Actions are a
+  // legal cookie-mutation context, so we can set the device cookie here
+  // atomically with the session cookie — meaning the very next render
+  // of /plan/<token> has both cookies in place and skips the bootstrap
+  // Route Handler entirely.
+  const h = await headers();
+  const ua = h.get("user-agent") ?? "";
+  const jar = await cookies();
+  const existingDeviceCookie = jar.get(deviceCookieName(plan.id))?.value ?? null;
+  const outcome = await authorizeDeviceAtomic(plan.id, existingDeviceCookie, ua);
+  await applyAuthorizeOutcomeToCookieJar(plan.id, outcome);
+
   revalidatePath(`/plan/${token}`);
   return null;
 }

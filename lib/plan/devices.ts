@@ -1,37 +1,64 @@
 import "server-only";
 import crypto from "node:crypto";
 import { cookies, headers } from "next/headers";
-import { sql } from "./db";
-import { timestampToString } from "./db";
-import type { DeviceAuthResult, PlanDevice } from "./types";
+import type { NextResponse } from "next/server";
+import { sql, timestampToString } from "./db";
+import type { PlanDevice } from "./types";
 
 /*
  * Per-plan device registry.
  *
- * The traveler's plan session (plan-access.ts) proves "this browser knows
- * the private token." This module adds a second gate: "this browser is one
- * of the plan's registered devices." The two cookies are intentionally
- * separate — if an admin rotates the plan token, every device re-authenticates
- * via the access form; if an admin revokes a single device, that one device
- * loses access without touching anyone else's session.
+ * Two cookies collaborate: `sl_plan_<pid>` (plan session) proves the customer
+ * knows the private token; `sl_dev_<pid>` proves this browser is one of the
+ * plan's registered devices. This file is the single source of truth for
+ * both the atomic registration logic and the cookie plumbing.
  *
  * Device identity: a 32-byte random token stored only in an httpOnly cookie
- * on the client, with a keyed SHA-256 of that token in the database. The
- * server-side HMAC key means a DB leak alone cannot be used to craft a
- * valid cookie — the attacker would also need PLAN_ACCESS_SECRET.
+ * on the client, with an HMAC-SHA256 of that token in the database. A DB
+ * leak alone cannot be used to craft a valid cookie — the attacker would
+ * also need `PLAN_ACCESS_SECRET`.
+ *
+ * Context rules (Next.js 16):
+ *   - Server Components may READ cookies but must not mutate them.
+ *   - Server Actions and Route Handlers are the only legal places to call
+ *     `cookies().set()` / `.delete()`.
+ *   - Accordingly, this module splits into two surfaces:
+ *       (a) Read-only helpers (safe anywhere): `findActiveDeviceByCookie`,
+ *           `touchDeviceLastSeen`, `readDeniedSignal`.
+ *       (b) Mutating helpers (actions / route handlers only):
+ *           `authorizeDeviceAtomic` returns an outcome without touching
+ *           cookies, and the caller applies the outcome using either
+ *           `applyAuthorizeOutcomeToResponse` (route handler) or
+ *           `applyAuthorizeOutcomeToCookieJar` (server action).
  */
 
-// Cookie prefix is scoped per plan so a device registered for one plan
-// doesn't accidentally pose as a device for another plan (which would be
-// a privacy leak, not a security one — the plan session is a separate
-// cookie — but keeping them scoped matches the plan session convention).
 const DEVICE_COOKIE_PREFIX = "sl_dev_";
+const DENIED_COOKIE_PREFIX = "sl_dev_denied_";
 const DEVICE_COOKIE_MAX_AGE = 60 * 60 * 24 * 180; // 180 days
+// Short-lived denial signal: just long enough for the bootstrap round-trip
+// to land back on the plan page. We do not want to persistently deny; the
+// next request (after this expires) will re-attempt the atomic authorize
+// in case the admin has freed a slot.
+const DENIED_COOKIE_MAX_AGE = 60;
 const DEVICE_TOKEN_BYTES = 32;
 
-function deviceCookieName(planId: string): string {
+export function deviceCookieName(planId: string): string {
   const safe = planId.replace(/[^a-zA-Z0-9_-]/g, "");
   return `${DEVICE_COOKIE_PREFIX}${safe}`;
+}
+
+export function deniedCookieName(planId: string): string {
+  const safe = planId.replace(/[^a-zA-Z0-9_-]/g, "");
+  return `${DENIED_COOKIE_PREFIX}${safe}`;
+}
+
+function cookieBaseOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+  };
 }
 
 function getHmacSecret(): string {
@@ -48,7 +75,7 @@ function getHmacSecret(): string {
   return secret;
 }
 
-function newDeviceToken(): string {
+export function newDeviceToken(): string {
   return crypto.randomBytes(DEVICE_TOKEN_BYTES).toString("base64url");
 }
 
@@ -117,40 +144,106 @@ const DEVICE_COLS = `
   created_at
 `;
 
+// =========================================================================
+// Read-only helpers — safe inside Server Components
+// =========================================================================
+
 export async function readDeviceCookie(planId: string): Promise<string | null> {
   const jar = await cookies();
   return jar.get(deviceCookieName(planId))?.value ?? null;
 }
 
-async function writeDeviceCookie(
-  planId: string,
-  raw: string
-): Promise<void> {
-  const jar = await cookies();
-  jar.set(deviceCookieName(planId), raw, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: DEVICE_COOKIE_MAX_AGE,
-  });
-}
-
-export async function clearDeviceCookie(planId: string): Promise<void> {
-  const jar = await cookies();
-  jar.set(deviceCookieName(planId), "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-}
-
-async function readUserAgent(): Promise<string> {
+export async function readUserAgent(): Promise<string> {
   const h = await headers();
   return h.get("user-agent") ?? "";
 }
+
+/**
+ * SELECT-only lookup — returns the active device row matching the current
+ * cookie, or null. Does not mutate cookies.
+ */
+export async function findActiveDeviceByCookie(
+  planId: string
+): Promise<PlanDevice | null> {
+  const raw = await readDeviceCookie(planId);
+  if (!raw) return null;
+  const hash = hashDeviceToken(raw);
+  const rows = (await sql().query(
+    `
+    SELECT ${DEVICE_COLS}
+    FROM plan_devices
+    WHERE plan_id = $1 AND device_token_hash = $2 AND revoked_at IS NULL
+    LIMIT 1
+    `,
+    [planId, hash]
+  )) as DeviceRow[];
+  if (!rows[0]) return null;
+  return rowToDevice(rows[0]);
+}
+
+/**
+ * UPDATE-only touch of last_seen_at. No cookie mutation — safe to call
+ * from a Server Component after `findActiveDeviceByCookie` confirms a hit.
+ */
+export async function touchDeviceLastSeen(deviceId: string): Promise<void> {
+  await sql().query(
+    `UPDATE plan_devices SET last_seen_at = now() WHERE id = $1`,
+    [deviceId]
+  );
+}
+
+export interface DeniedSignal {
+  activeCount: number;
+  maxDevices: number;
+}
+
+/**
+ * Reads the short-lived denial signal cookie dropped by the bootstrap
+ * route handler when the atomic authorize came back with no slot. Returns
+ * null if absent or malformed. Does not mutate cookies.
+ */
+export async function readDeniedSignal(
+  planId: string
+): Promise<DeniedSignal | null> {
+  const jar = await cookies();
+  const raw = jar.get(deniedCookieName(planId))?.value;
+  if (!raw) return null;
+  const parts = raw.split(":");
+  if (parts.length !== 2) return null;
+  const active = Number.parseInt(parts[0], 10);
+  const max = Number.parseInt(parts[1], 10);
+  if (!Number.isFinite(active) || !Number.isFinite(max)) return null;
+  return { activeCount: active, maxDevices: max };
+}
+
+// =========================================================================
+// Atomic DB authorization — no cookie mutation
+// =========================================================================
+
+export type AuthorizeOutcome =
+  | {
+      outcome: "existing_active";
+      activeCount: number;
+      maxDevices: number;
+      device: PlanDevice;
+    }
+  | {
+      outcome: "registered_new";
+      activeCount: number;
+      maxDevices: number;
+      device: PlanDevice;
+      rawTokenToSet: string;
+    }
+  | {
+      outcome: "revoked";
+      activeCount: number;
+      maxDevices: number;
+    }
+  | {
+      outcome: "limit_reached";
+      activeCount: number;
+      maxDevices: number;
+    };
 
 interface AuthorizeRow {
   max_devices: number;
@@ -167,20 +260,17 @@ interface AuthorizeRow {
  * concurrent requests for the SAME plan cannot both admit a new device
  * above max_devices. Different plans don't contend.
  *
- * The returned shape covers three cases:
- *   • existing active row → `touched` populated, caller updates last_seen_at
- *   • new row inserted    → `inserted` populated, caller sets device cookie
- *   • limit reached       → both null, active_count already at max_devices
- *   • existing revoked    → `existing_revoked_at` set, cookie must be cleared
- *
- * The caller does the "deny on revoked" branch so the cookie-clear side
- * effect is kept out of this DB function.
+ * Pure DB — does NOT mutate cookies. Callers (Route Handlers / Server
+ * Actions) apply the outcome via `applyAuthorizeOutcomeToResponse` or
+ * `applyAuthorizeOutcomeToCookieJar`.
  */
-async function authorizeDeviceAtomic(
+export async function authorizeDeviceAtomic(
   planId: string,
-  tokenHash: string,
+  existingCookieValue: string | null,
   userAgent: string
-): Promise<AuthorizeRow | null> {
+): Promise<AuthorizeOutcome> {
+  const rawToken = existingCookieValue || newDeviceToken();
+  const hash = hashDeviceToken(rawToken);
   const label = deriveDeviceLabel(userAgent);
   // Two queries in one HTTP transaction: statement-level snapshots in
   // READ COMMITTED mean query #2's reads see state as of its own start,
@@ -235,77 +325,127 @@ async function authorizeDeviceAtomic(
         (SELECT row_to_json(t) FROM touched t)           AS touched,
         (SELECT row_to_json(i) FROM inserted i)          AS inserted
       `,
-      [planId, tokenHash, label, userAgent.slice(0, 500)]
+      [planId, hash, label, userAgent.slice(0, 500)]
     ),
   ])) as [unknown, AuthorizeRow[]];
-  return row ?? null;
-}
 
-/**
- * Public entry point used by the plan auth path. Reads the cookie, hashes
- * it, runs the atomic authorize, and manages the cookie side effect.
- *
- * Returns a `DeviceAuthResult` the caller can switch on to render the right
- * UI without any further DB queries.
- */
-export async function authorizeDevice(
-  planId: string
-): Promise<DeviceAuthResult> {
-  const ua = await readUserAgent();
-  const existing = await readDeviceCookie(planId);
-
-  // No cookie → mint a fresh random token. Collision probability with any
-  // existing row is negligible (2^-256), so we treat this as unconditionally
-  // a new device slot request.
-  const rawToken = existing || newDeviceToken();
-  const hash = hashDeviceToken(rawToken);
-
-  const row = await authorizeDeviceAtomic(planId, hash, ua);
   if (!row) {
-    // Plan not found or SQL returned no row — defensively deny. The caller
-    // should treat this as "not found", not as a limit-reached message.
+    // Plan not found or SQL returned no row — defensively deny.
+    return { outcome: "limit_reached", activeCount: 0, maxDevices: 0 };
+  }
+  if (row.touched) {
     return {
-      ok: false,
-      status: "limit_reached",
-      activeCount: 0,
-      maxDevices: 0,
+      outcome: "existing_active",
+      activeCount: row.active_count,
+      maxDevices: row.max_devices,
+      device: rowToDevice(row.touched),
     };
   }
-
-  // Case 1 — existing active row updated. Keep the cookie as-is.
-  if (row.touched) {
-    return { ok: true, status: "existing", device: rowToDevice(row.touched) };
-  }
-
-  // Case 2 — existing row found but revoked. Clear the cookie so the user
-  // doesn't stay in a loop with a dead token, and surface the denial.
   if (row.existing_revoked_at != null) {
-    await clearDeviceCookie(planId);
     return {
-      ok: false,
-      status: "limit_reached",
+      outcome: "revoked",
       activeCount: row.active_count,
       maxDevices: row.max_devices,
     };
   }
-
-  // Case 3 — fresh insert succeeded. Persist the raw token in the cookie
-  // so this browser is remembered across navigations.
   if (row.inserted) {
-    if (!existing) {
-      await writeDeviceCookie(planId, rawToken);
-    }
-    return { ok: true, status: "registered", device: rowToDevice(row.inserted) };
+    return {
+      outcome: "registered_new",
+      activeCount: row.active_count,
+      maxDevices: row.max_devices,
+      device: rowToDevice(row.inserted),
+      rawTokenToSet: rawToken,
+    };
   }
-
-  // Case 4 — nothing inserted, nothing touched → the active count was at
-  // or above the cap. Deny with real numbers so the UI can show "2 / 2".
   return {
-    ok: false,
-    status: "limit_reached",
+    outcome: "limit_reached",
     activeCount: row.active_count,
     maxDevices: row.max_devices,
   };
+}
+
+// =========================================================================
+// Cookie side effects — only legal from Server Actions or Route Handlers
+// =========================================================================
+//
+// Two shapes: one that writes onto a `NextResponse` (for Route Handlers,
+// which must return the response object), and one that writes through
+// `cookies()` from `next/headers` (for Server Actions, which rely on
+// Next.js propagating the mutations to the eventual response).
+
+/** Route-handler side effect. */
+export function applyAuthorizeOutcomeToResponse(
+  res: NextResponse,
+  planId: string,
+  outcome: AuthorizeOutcome
+): void {
+  const base = cookieBaseOptions();
+  switch (outcome.outcome) {
+    case "registered_new":
+      res.cookies.set(deviceCookieName(planId), outcome.rawTokenToSet, {
+        ...base,
+        maxAge: DEVICE_COOKIE_MAX_AGE,
+      });
+      // Clear any stale denial signal.
+      res.cookies.set(deniedCookieName(planId), "", { ...base, maxAge: 0 });
+      return;
+    case "existing_active":
+      res.cookies.set(deniedCookieName(planId), "", { ...base, maxAge: 0 });
+      return;
+    case "revoked":
+      // Dead token — forget it on the client so the user doesn't loop with
+      // a cookie that will never admit them again.
+      res.cookies.set(deviceCookieName(planId), "", { ...base, maxAge: 0 });
+      res.cookies.set(
+        deniedCookieName(planId),
+        `${outcome.activeCount}:${outcome.maxDevices}`,
+        { ...base, maxAge: DENIED_COOKIE_MAX_AGE }
+      );
+      return;
+    case "limit_reached":
+      res.cookies.set(
+        deniedCookieName(planId),
+        `${outcome.activeCount}:${outcome.maxDevices}`,
+        { ...base, maxAge: DENIED_COOKIE_MAX_AGE }
+      );
+      return;
+  }
+}
+
+/** Server-action side effect. */
+export async function applyAuthorizeOutcomeToCookieJar(
+  planId: string,
+  outcome: AuthorizeOutcome
+): Promise<void> {
+  const jar = await cookies();
+  const base = cookieBaseOptions();
+  switch (outcome.outcome) {
+    case "registered_new":
+      jar.set(deviceCookieName(planId), outcome.rawTokenToSet, {
+        ...base,
+        maxAge: DEVICE_COOKIE_MAX_AGE,
+      });
+      jar.set(deniedCookieName(planId), "", { ...base, maxAge: 0 });
+      return;
+    case "existing_active":
+      jar.set(deniedCookieName(planId), "", { ...base, maxAge: 0 });
+      return;
+    case "revoked":
+      jar.set(deviceCookieName(planId), "", { ...base, maxAge: 0 });
+      jar.set(
+        deniedCookieName(planId),
+        `${outcome.activeCount}:${outcome.maxDevices}`,
+        { ...base, maxAge: DENIED_COOKIE_MAX_AGE }
+      );
+      return;
+    case "limit_reached":
+      jar.set(
+        deniedCookieName(planId),
+        `${outcome.activeCount}:${outcome.maxDevices}`,
+        { ...base, maxAge: DENIED_COOKIE_MAX_AGE }
+      );
+      return;
+  }
 }
 
 // =========================================================================
