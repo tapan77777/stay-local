@@ -83,6 +83,21 @@ const CATEGORY_STYLE: Record<PlanMapCategory, CategoryStyle> = {
 
 const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
+// MapLibre's internal worker URL is derived from `new URL("./maplibre-gl-worker.mjs", import.meta.url)`
+// against the compiled MapLibre module's own URL. In a Next.js webpack bundle
+// that resolves to a chunk path where the worker file is NOT emitted, so the
+// Worker constructor 404s and we lose vector-tile decoding. We ship the worker
+// file at a stable public path and point MapLibre at it explicitly. Done once
+// at module load so every PlanMap mount shares the same workerUrl setting.
+const PLAN_MAP_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
+if (typeof window !== "undefined") {
+  try {
+    maplibregl.setWorkerUrl(PLAN_MAP_WORKER_URL);
+  } catch (err) {
+    console.warn("[plan-map] setWorkerUrl failed", err);
+  }
+}
+
 function categorySwatchBg(c: PlanMapCategory): string {
   // Explicit map so Tailwind JIT keeps the class list. Hex color stays the
   // marker source of truth; this is just the legend swatch.
@@ -446,7 +461,19 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
         ref={containerRef}
         aria-label="Interactive trip map"
         role="application"
-        className="absolute inset-0"
+        /*
+         * h-full w-full (NOT absolute inset-0) is intentional. MapLibre adds
+         * `.maplibregl-map { position: relative }` to this element at init.
+         * That rule (same CSS specificity, imported after Tailwind) overrides
+         * `.absolute`, which flips the element to relative positioning. With
+         * `inset-0` on a relative element the offsets become no-ops, the
+         * element drops to content-driven height, and because every MapLibre
+         * child is absolute the container collapses to 0px tall. Sizing with
+         * 100%/100% is position-independent and fills the h-[calc(100dvh-7rem)]
+         * wrapper correctly whether MapLibre keeps our `absolute` or forces
+         * `relative`.
+         */
+        className="h-full w-full"
       />
 
       {/* Loading curtain — shown until the style is parsed. Error curtain
