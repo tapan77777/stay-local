@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/admin/page-header";
 import { PlanAccessPanel } from "@/components/admin/plan-access-panel";
+import { PlanDevicesPanel } from "@/components/admin/plan-devices-panel";
 import { PlanStatusBadge } from "@/components/admin/plan-status-badge";
 import { DocumentsSection } from "@/components/admin/plan-builder/documents-section";
 import { HelpForm } from "@/components/admin/plan-builder/help-form";
@@ -14,6 +15,7 @@ import {
   listDestinationModuleCounts,
   listDestinations,
 } from "@/lib/plan/destinations";
+import { listPlanDevices } from "@/lib/plan/devices";
 import { listPlanDocuments } from "@/lib/plan/documents";
 import { listIndiaGuideItems } from "@/lib/plan/india-guide";
 import {
@@ -30,11 +32,12 @@ export default async function AdminPlanBuilderPage({
   await requireAdmin();
   const { id } = await params;
   // Parallel fetches — no sequential waterfall.
-  const [plan, destinations, guideItems, documents] = await Promise.all([
+  const [plan, destinations, guideItems, documents, devices] = await Promise.all([
     getPlan(id),
     listDestinations(id),
     listIndiaGuideItems(id),
     listPlanDocuments(id),
+    listPlanDevices(id),
   ]);
   if (!plan) notFound();
 
@@ -107,6 +110,7 @@ export default async function AdminPlanBuilderPage({
 
         <div className="space-y-6 lg:col-span-2">
           <PlanAccessPanel plan={plan} />
+          <PlanDevicesPanel plan={plan} devices={devices} />
           <div className="rounded-2xl border border-border bg-white p-6 text-sm">
             <h2 className="mb-3 font-serif text-lg text-charcoal">
               Access state

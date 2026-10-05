@@ -16,10 +16,17 @@ import {
   rotatePrivateToken,
   togglePlanDisabled,
   updatePlan,
+  updatePlanMaxDevices,
   evaluatePlanAccess,
 } from "./plans";
+import { revokeAllDevices, revokeDevice } from "./devices";
 import { createPlanSession } from "./plan-access";
-import { PLAN_STATUSES, type PlanStatus } from "./types";
+import {
+  MAX_MAX_DEVICES,
+  MIN_MAX_DEVICES,
+  PLAN_STATUSES,
+  type PlanStatus,
+} from "./types";
 
 interface ActionError {
   error: string;
@@ -142,6 +149,47 @@ export async function rotatePlanTokenAction(planId: string): Promise<void> {
   await requireAdmin();
   await rotatePrivateToken(planId);
   revalidatePath(`/admin/plans/${planId}`);
+}
+
+export async function updateMaxDevicesAction(
+  planId: string,
+  _prev: ActionError | null,
+  formData: FormData
+): Promise<ActionError | null> {
+  await requireAdmin();
+  const raw = String(formData.get("maxDevices") ?? "").trim();
+  const n = Number(raw);
+  if (!Number.isFinite(n)) {
+    return { error: "Please enter a valid number." };
+  }
+  const value = Math.floor(n);
+  if (value < MIN_MAX_DEVICES || value > MAX_MAX_DEVICES) {
+    return {
+      error: `Please pick a number between ${MIN_MAX_DEVICES} and ${MAX_MAX_DEVICES}.`,
+    };
+  }
+  const updated = await updatePlanMaxDevices(planId, value);
+  if (!updated) return { error: "Plan not found." };
+  revalidatePath(`/admin/plans/${planId}`);
+  revalidatePath("/admin/plans");
+  return null;
+}
+
+export async function revokeDeviceAction(
+  planId: string,
+  deviceId: string
+): Promise<void> {
+  await requireAdmin();
+  await revokeDevice(deviceId, planId);
+  revalidatePath(`/admin/plans/${planId}`);
+  revalidatePath("/admin/plans");
+}
+
+export async function revokeAllDevicesAction(planId: string): Promise<void> {
+  await requireAdmin();
+  await revokeAllDevices(planId);
+  revalidatePath(`/admin/plans/${planId}`);
+  revalidatePath("/admin/plans");
 }
 
 export async function unlockPlanAction(

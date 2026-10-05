@@ -46,6 +46,7 @@ export interface Plan {
   importantNotes: string;
   whatsappContact: string;
   supportInfo: string;
+  maxDevices: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,6 +63,31 @@ export interface PlanAccessResult {
   ok: boolean;
   reason?: PlanAccessDenialReason;
 }
+
+// Per-plan device access control (schema-3-devices.sql).
+// `maxDevices` is enforced server-side on both the unlock action and the
+// subsequent `authenticatePlan` middleware so the limit cannot be bypassed
+// by hitting a sub-route directly.
+export const MIN_MAX_DEVICES = 1;
+export const MAX_MAX_DEVICES = 20;
+
+export interface PlanDevice {
+  id: string;
+  planId: string;
+  deviceLabel: string | null;
+  userAgent: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+// Shape returned by the atomic authorize-device operation. One of three
+// cases so callers can render the right UI without a second query.
+export type DeviceAuthResult =
+  | { ok: true; status: "existing"; device: PlanDevice }
+  | { ok: true; status: "registered"; device: PlanDevice }
+  | { ok: false; status: "limit_reached"; activeCount: number; maxDevices: number };
 
 // =========================================================================
 // Phase 2A — destinations and modules

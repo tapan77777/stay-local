@@ -3,12 +3,15 @@ import { PageHeader } from "@/components/admin/page-header";
 import { PlanStatusBadge } from "@/components/admin/plan-status-badge";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/plan/auth";
+import { countActiveDevicesByPlan } from "@/lib/plan/devices";
 import { listPlans } from "@/lib/plan/plans";
 import { formatDateRange } from "@/lib/plan/format";
 
 export default async function AdminPlansPage() {
   await requireAdmin();
   const plans = await listPlans();
+  // One grouped query across every plan on the page — avoids N+1.
+  const activeByPlan = await countActiveDevicesByPlan(plans.map((p) => p.id));
   return (
     <>
       <PageHeader
@@ -42,6 +45,7 @@ export default async function AdminPlansPage() {
                     <th className="px-5 py-3 font-medium">Dates</th>
                     <th className="px-5 py-3 font-medium">Status</th>
                     <th className="px-5 py-3 font-medium">Access</th>
+                    <th className="px-5 py-3 font-medium">Devices</th>
                     <th className="px-5 py-3 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -77,6 +81,12 @@ export default async function AdminPlansPage() {
                         {formatDateRange(p.accessStartsAt, p.accessEndsAt)}
                       </td>
                       <td className="px-5 py-3">
+                        <DevicesCell
+                          active={activeByPlan.get(p.id) ?? 0}
+                          max={p.maxDevices}
+                        />
+                      </td>
+                      <td className="px-5 py-3">
                         <Link
                           href={`/admin/plans/${p.id}`}
                           className="text-xs text-brand-green hover:underline"
@@ -93,5 +103,29 @@ export default async function AdminPlansPage() {
         </div>
       </div>
     </>
+  );
+}
+
+// Three colour states, matching the detail panel chip:
+//   • green  — under limit, with headroom
+//   • cream  — at the cap, nothing wrong, just full
+//   • terracotta — over the cap (admin lowered maxDevices after use)
+function DevicesCell({ active, max }: { active: number; max: number }) {
+  const over = active > max;
+  const full = active >= max && !over;
+  const cls = over
+    ? "bg-terracotta/10 text-terracotta"
+    : full
+      ? "bg-cream-warm text-charcoal-soft"
+      : "bg-brand-green/10 text-brand-green-dark";
+  return (
+    <span
+      className={
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium " +
+        cls
+      }
+    >
+      {active} / {max}
+    </span>
   );
 }

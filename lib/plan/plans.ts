@@ -28,6 +28,7 @@ interface PlanRow {
   important_notes: string;
   whatsapp_contact: string;
   support_info: string;
+  max_devices: number;
   created_at: unknown;
   updated_at: unknown;
 }
@@ -60,6 +61,7 @@ const PLAN_RETURNING = `
   important_notes,
   whatsapp_contact,
   support_info,
+  max_devices,
   created_at,
   updated_at
 `;
@@ -89,6 +91,7 @@ const PLAN_JOIN_SQL = `
     p.important_notes,
     p.whatsapp_contact,
     p.support_info,
+    p.max_devices,
     p.created_at,
     p.updated_at,
     c.id         AS c_id,
@@ -121,6 +124,7 @@ function rowToPlan(r: PlanRow): Plan {
     importantNotes: r.important_notes ?? "",
     whatsappContact: r.whatsapp_contact ?? "",
     supportInfo: r.support_info ?? "",
+    maxDevices: r.max_devices ?? 1,
     createdAt: timestampToString(r.created_at) ?? "",
     updatedAt: timestampToString(r.updated_at) ?? "",
   };
@@ -328,6 +332,30 @@ export async function updatePlanHelp(
     RETURNING ${PLAN_RETURNING}
     `,
     [id, input.whatsappContact.trim(), input.supportInfo.trim()]
+  )) as PlanRow[];
+  return rows[0] ? rowToPlan(rows[0]) : null;
+}
+
+/**
+ * Device cap update. Clamps server-side to the CHECK range so a form POST
+ * cannot bypass the schema constraint before SQL rejects it, and keeps the
+ * admin UI free of raw DB errors. Does NOT auto-revoke devices if the new
+ * cap sits below the current active count — admins revoke manually.
+ */
+export async function updatePlanMaxDevices(
+  id: string,
+  value: number
+): Promise<Plan | null> {
+  const clamped = Math.max(1, Math.min(20, Math.floor(value || 1)));
+  const rows = (await sql().query(
+    `
+    UPDATE plans SET
+      max_devices = $2,
+      updated_at  = now()
+    WHERE id = $1
+    RETURNING ${PLAN_RETURNING}
+    `,
+    [id, clamped]
   )) as PlanRow[];
   return rows[0] ? rowToPlan(rows[0]) : null;
 }

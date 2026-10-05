@@ -3,12 +3,14 @@ import type { ReactNode } from "react";
 import { cache } from "react";
 import { getPlanByToken, evaluatePlanAccess } from "./plans";
 import { getPlanSession } from "./plan-access";
+import { authorizeDevice } from "./devices";
 import {
   listDestinations,
   listDestinationModuleCounts,
 } from "./destinations";
 import { PlanAccessForm } from "@/components/plan/plan-access-form";
 import { PlanUnavailable } from "@/components/plan/plan-unavailable";
+import { PlanDeviceLimit } from "@/components/plan/plan-device-limit";
 import type {
   Destination,
   DestinationModuleCounts,
@@ -53,6 +55,26 @@ export const authenticatePlan = cache(async function authenticatePlan(
   const session = await getPlanSession(plan.id);
   if (!session) {
     return { ok: false, render: <PlanAccessForm token={token} /> };
+  }
+  // Second gate: device registry. A valid plan session cookie proves the
+  // customer knows the code, but we also require the device to be one of
+  // the plan's registered devices (up to max_devices). Enforcing this here
+  // — inside the request-scoped memoized helper — means every /plan/[token]/*
+  // sub-route runs the check once per request, so a direct hit on a nested
+  // URL cannot bypass the limit.
+  const auth = await authorizeDevice(plan.id);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      render: (
+        <PlanDeviceLimit
+          planTitle={plan.title || "your trip"}
+          activeCount={auth.activeCount}
+          maxDevices={auth.maxDevices}
+          whatsappContact={plan.whatsappContact}
+        />
+      ),
+    };
   }
   return {
     ok: true,

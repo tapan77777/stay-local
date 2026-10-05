@@ -54,7 +54,7 @@ async function run() {
   }
 
   const sql = neon(url);
-  const schemaFiles = ["schema.sql", "schema-2a.sql"];
+  const schemaFiles = ["schema.sql", "schema-2a.sql", "schema-3-devices.sql"];
   for (const file of schemaFiles) {
     const schemaPath = path.join(ROOT, "lib", "plan", file);
     try {

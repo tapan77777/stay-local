@@ -8,7 +8,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "plan:migrate": "node scripts/plan-migrate.mjs"
+    "plan:migrate": "node scripts/plan-migrate.mjs",
+    "plan:test:devices": "node scripts/plan-devices-test.mjs"
   },
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",
