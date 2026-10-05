@@ -16,6 +16,7 @@ import {
   ArrowUpRight,
   Compass,
   ExternalLink,
+  LocateFixed,
   X,
 } from "lucide-react";
 import { CinematicReveal } from "@/components/site/motion-primitives";
@@ -455,6 +456,34 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
 
   const closeSheet = useCallback(() => setSelectedPin(null), []);
 
+  // Smoothly re-center the live MapLibre instance on the selected pin and
+  // zoom to a close-up level. Padding is picked at call time so the pin isn't
+  // obscured by the mobile bottom-sheet or the desktop floating card. Reduced
+  // motion → duration 0 so the camera snaps rather than animates. Fail-safe
+  // on invalid coords so a stray pin can't throw inside MapLibre.
+  const focusOnMap = useCallback(
+    (pin: PlanMapPin) => {
+      const map = mapRef.current;
+      if (!map) return;
+      if (!Number.isFinite(pin.lng) || !Number.isFinite(pin.lat)) return;
+      const isDesktop =
+        typeof window !== "undefined" &&
+        window.matchMedia("(min-width: 1024px)").matches;
+      // Mobile: push the camera up so the pin sits above the bottom card.
+      // Desktop: push right so the pin isn't under the left-anchored card.
+      const padding = isDesktop
+        ? { top: 80, right: 80, bottom: 80, left: 400 }
+        : { top: 80, right: 60, bottom: 300, left: 60 };
+      map.flyTo({
+        center: [pin.lng, pin.lat],
+        zoom: Math.max(map.getZoom(), 15),
+        padding,
+        duration: reduced ? 0 : 900,
+      });
+    },
+    [reduced],
+  );
+
   return (
     <div className="relative -mb-28 h-[calc(100dvh-7rem)] overflow-hidden bg-cream-warm lg:-mb-16 lg:h-[calc(100vh-6rem)] lg:rounded-3xl">
       <div
@@ -593,6 +622,7 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
           pin={selectedPin}
           token={token}
           onClose={closeSheet}
+          onFocusOnMap={focusOnMap}
           reduced={!!reduced}
         />
       ) : null}
@@ -630,11 +660,13 @@ function PinDetailSheet({
   pin,
   token,
   onClose,
+  onFocusOnMap,
   reduced,
 }: {
   pin: PlanMapPin;
   token: string;
   onClose: () => void;
+  onFocusOnMap: (pin: PlanMapPin) => void;
   reduced: boolean;
 }) {
   const style = CATEGORY_STYLE[pin.category];
@@ -692,10 +724,15 @@ function PinDetailSheet({
                 {pin.description}
               </p>
             ) : null}
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+            {/* Primary + secondary actions, side-by-side. "View details"
+                routes into the destination/module page; "On map" stays here
+                and re-centers the live MapLibre camera on this pin. The
+                existing external "Open in Google Maps" link remains as a
+                quiet tertiary action for travelers who want turn-by-turn. */}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <Link
                 href={detailHref}
-                className="group inline-flex items-center gap-1.5 rounded-full bg-brand-green px-4 py-2 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-brand-green-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+                className="group inline-flex min-h-11 items-center gap-1.5 rounded-full bg-brand-green px-4 py-2 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-brand-green-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
               >
                 View details
                 <ArrowUpRight
@@ -703,15 +740,30 @@ function PinDetailSheet({
                   className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0"
                 />
               </Link>
+              <button
+                type="button"
+                onClick={(e) => {
+                  // Guard against the click bubbling to the mobile backdrop
+                  // button (which lives behind the card and would otherwise
+                  // dismiss the sheet) or being treated as a view-details tap.
+                  e.stopPropagation();
+                  onFocusOnMap(pin);
+                }}
+                aria-label={`Center the map on ${pin.name}`}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-brand-green/35 bg-white px-4 py-2 text-[13px] font-medium text-brand-green-dark shadow-sm transition-colors hover:border-brand-green hover:bg-brand-green-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
+              >
+                <LocateFixed size={13} aria-hidden />
+                On map
+              </button>
               {pin.mapUrl ? (
                 <Link
                   href={pin.mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-green-dark transition-colors hover:text-charcoal"
+                  className="ml-auto inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-green-dark transition-colors hover:text-charcoal"
                 >
                   <ExternalLink size={13} />
-                  Open in maps
+                  Google Maps
                 </Link>
               ) : null}
             </div>
