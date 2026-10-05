@@ -149,14 +149,34 @@ function createPinElement(
   return el;
 }
 
+// Lifecycle stages for the map, kept small and ordered. We flip the loading
+// curtain OFF as soon as the style has loaded (canvas is rendering, markers
+// are safe to position) — not when `load` fires. See the long comment on the
+// mount effect for why.
+type MapStage =
+  | "init"
+  | "style-loading"
+  | "style-loaded"
+  | "fully-loaded"
+  | "error";
+
+const SHOW_MAP_DEBUG =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_PLAN_MAP_DEBUG === "1";
+
 export function PlanMap({ token, pins, destinations }: PlanMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
-  const [ready, setReady] = useState(false);
+  const [stage, setStage] = useState<MapStage>("init");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
   const [selectedPin, setSelectedPin] = useState<PlanMapPin | null>(null);
   const reduced = useReducedMotion();
+
+  // "Ready" for the purposes of hiding the curtain and placing markers =
+  // style parsed. Tiles will keep streaming in behind, which is fine.
+  const ready = stage === "style-loaded" || stage === "fully-loaded";
 
   const visiblePins = useMemo(() => {
     if (!selectedDestId) return pins;
@@ -187,22 +207,50 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
 
   // Mount the map exactly once. Pins are added in a separate effect so the
   // style load + marker lifecycle stay decoupled.
+  //
+  // IMPORTANT lifecycle note:
+  // MapLibre's `load` event fires only after *all* necessary resources have
+  // been downloaded AND the first visually complete render has happened. On
+  // real mobile cellular networks a single tile that times out or 404s is
+  // enough to keep `load` from ever firing — the canvas is drawn, the style
+  // is parsed, markers would work, but the curtain was staying up forever.
+  // So we trigger readiness on `style.load` (style spec parsed, canvas ready
+  // to render) instead. Tiles continue streaming in behind the curtain-off
+  // state, which is the correct behaviour; the user sees progress as they
+  // land rather than a dead "Placing your pins" if one tile stalls.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    setStage("style-loading");
     const initialBounds = pinBoundsOrNull(pinsRef.current);
-    const map = new maplibregl.Map({
-      container,
-      style: MAP_STYLE_URL,
-      attributionControl: { compact: true },
-      bounds: initialBounds ?? undefined,
-      fitBoundsOptions: initialBounds
-        ? { padding: 60, maxZoom: 12, animate: false }
-        : undefined,
-      center: initialBounds ? undefined : [78.9629, 20.5937], // India centroid fallback
-      zoom: initialBounds ? undefined : 4,
-      cooperativeGestures: false,
-    });
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container,
+        style: MAP_STYLE_URL,
+        attributionControl: { compact: true },
+        bounds: initialBounds ?? undefined,
+        fitBoundsOptions: initialBounds
+          ? { padding: 60, maxZoom: 12, animate: false }
+          : undefined,
+        center: initialBounds ? undefined : [78.9629, 20.5937], // India centroid fallback
+        zoom: initialBounds ? undefined : 4,
+        cooperativeGestures: false,
+      });
+    } catch (e) {
+      // Hard failure (e.g. WebGL context creation refused). Surface it so the
+      // traveler sees something actionable instead of a stuck curtain. Defer
+      // the state transition past the current render tick so React doesn't
+      // see a synchronous setState inside an effect body.
+      console.error("[plan-map] map constructor failed", e);
+      const msg =
+        e instanceof Error ? e.message : "Could not start the map on this device";
+      queueMicrotask(() => {
+        setErrorMsg(msg);
+        setStage("error");
+      });
+      return;
+    }
     map.addControl(
       new maplibregl.NavigationControl({
         showCompass: false,
@@ -211,17 +259,35 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
       "top-right",
     );
 
-    // Primary ready signal: MapLibre's `load` fires once style + first viewport
-    // tiles are ready. On mobile Safari the container can briefly report 0×0
-    // on mount (dvh settles after the first paint), which leaves the map with
-    // a 0-sized canvas and `load` never fires. The ResizeObserver below pokes
-    // `resize()` as soon as a real size lands, which is what frees `load`.
-    const onLoad = () => setReady(true);
+    // Primary readiness signal — style spec parsed, canvas painting, markers
+    // can be placed. Hide the curtain here even if tiles are still arriving.
+    const onStyleLoad = () => {
+      setStage((s) => (s === "fully-loaded" ? s : "style-loaded"));
+      try {
+        map.resize();
+      } catch {
+        /* ignore — fast nav teardown */
+      }
+    };
+    // Secondary signal — kept so the dev overlay can distinguish "canvas up"
+    // from "all tiles settled". Not required to show the map.
+    const onLoad = () => setStage("fully-loaded");
+    map.on("style.load", onStyleLoad);
     map.on("load", onLoad);
-    // Surface tile/style errors to the browser console so stuck-loading cases
-    // are debuggable from a real device rather than silent.
+
+    // Errors from MapLibre arrive here. Many are non-fatal (one tile 404,
+    // transient network blip) — those are logged but don't flip the stage.
+    // A fatal error BEFORE style.load has fired (e.g. style URL unreachable,
+    // bad JSON) switches to the error curtain so the traveler sees why.
     const onError = (e: unknown) => {
+      const err = (e as { error?: Error })?.error;
+      const msg = err?.message || "map error";
       console.error("[plan-map] maplibre error", e);
+      setStage((s) => {
+        if (s === "style-loaded" || s === "fully-loaded") return s;
+        setErrorMsg(msg);
+        return "error";
+      });
     };
     map.on("error", onError);
 
@@ -254,6 +320,7 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
     return () => {
       cancelAnimationFrame(raf);
       ro?.disconnect();
+      map.off("style.load", onStyleLoad);
       map.off("load", onLoad);
       map.off("error", onError);
       for (const m of markersRef.current) m.remove();
@@ -309,14 +376,47 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
         className="absolute inset-0"
       />
 
-      {/* Loading curtain — shown until MapLibre reports load. Prevents a
-          flash of blank cream before the tiles paint. */}
-      {!ready ? (
+      {/* Loading curtain — shown until the style is parsed. Error curtain
+          takes over if MapLibre couldn't initialise at all. */}
+      {!ready && stage !== "error" ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-cream-warm">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-green-dark/80">
             <Compass size={13} className="animate-pulse" aria-hidden />
             Placing your pins
           </div>
+        </div>
+      ) : null}
+      {stage === "error" ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-cream-warm px-6">
+          <div className="max-w-sm text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-green-dark">
+              Map couldn&rsquo;t load
+            </p>
+            <p className="mt-3 font-serif text-[20px] leading-snug text-charcoal">
+              Your pins are safe — the map just hit a snag loading on this
+              device.
+            </p>
+            <p className="mt-3 text-[13px] leading-relaxed text-charcoal-soft">
+              Try a Wi-Fi connection or reopen the plan. If it keeps happening,
+              WhatsApp me and I&rsquo;ll help.
+            </p>
+            {errorMsg ? (
+              <p className="mt-4 font-mono text-[10.5px] text-charcoal-soft/70">
+                {errorMsg}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Dev-only diagnostic — shows which stage the map reached so phone
+          testing can see "style-loading", "style-loaded", "fully-loaded",
+          or "error" without a remote debugger. Gated on NODE_ENV so it
+          never ships to the traveler. */}
+      {SHOW_MAP_DEBUG ? (
+        <div className="pointer-events-none absolute bottom-24 left-3 z-40 rounded bg-charcoal/85 px-2 py-1 font-mono text-[10px] leading-none text-cream lg:bottom-3">
+          map: {stage}
+          {errorMsg ? ` · ${errorMsg}` : ""}
         </div>
       ) : null}
 
