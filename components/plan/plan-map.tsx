@@ -16,7 +16,6 @@ import {
   ArrowUpRight,
   Compass,
   ExternalLink,
-  LocateFixed,
   X,
 } from "lucide-react";
 import { CinematicReveal } from "@/components/site/motion-primitives";
@@ -176,24 +175,14 @@ type MapStage =
   | "fully-loaded"
   | "error";
 
-const SHOW_MAP_DEBUG =
-  process.env.NODE_ENV !== "production" ||
-  process.env.NEXT_PUBLIC_PLAN_MAP_DEBUG === "1";
-
-interface MapDiagnostics {
-  containerW: number;
-  containerH: number;
-  rectW: number;
-  rectH: number;
-  canvasClientW: number;
-  canvasClientH: number;
-  canvasW: number;
-  canvasH: number;
-  webgl: "webgl2" | "webgl" | "none";
-  styleLoaded: boolean;
-  zoom: number;
-  bearing: number;
-  sampledAt: string;
+// Universal Google Maps search URL. Works on desktop (opens in web Maps) and
+// hands off to the native Google Maps app on mobile when installed. Encodes
+// the place name first so visually "Taj Mahal" shows in the Maps header, but
+// keeps the exact coordinates so the pin lands precisely regardless of how
+// the name geocodes.
+function googleMapsSearchUrl(pin: PlanMapPin): string {
+  const q = `${encodeURIComponent(pin.name)},${pin.lat},${pin.lng}`;
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
 export function PlanMap({ token, pins, destinations }: PlanMapProps) {
@@ -202,7 +191,6 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [stage, setStage] = useState<MapStage>("init");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [diag, setDiag] = useState<MapDiagnostics | null>(null);
   const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
   const [selectedPin, setSelectedPin] = useState<PlanMapPin | null>(null);
   const reduced = useReducedMotion();
@@ -292,45 +280,6 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
       "top-right",
     );
 
-    // Debug-only: snapshot container/canvas/state so a phone test can see the
-    // actual sizing at the moment the style finished loading. Guarded on
-    // SHOW_MAP_DEBUG so no production traveler ever triggers these reads.
-    const captureDiag = (tag: string) => {
-      if (!SHOW_MAP_DEBUG) return;
-      try {
-        const canvas = map.getCanvas();
-        const rect = container.getBoundingClientRect();
-        const gl2 = canvas.getContext("webgl2");
-        const gl1 = gl2 ? null : canvas.getContext("webgl");
-        const webgl: MapDiagnostics["webgl"] = gl2
-          ? "webgl2"
-          : gl1
-            ? "webgl"
-            : "none";
-        const d: MapDiagnostics = {
-          containerW: container.clientWidth,
-          containerH: container.clientHeight,
-          rectW: Math.round(rect.width),
-          rectH: Math.round(rect.height),
-          canvasClientW: canvas.clientWidth,
-          canvasClientH: canvas.clientHeight,
-          canvasW: canvas.width,
-          canvasH: canvas.height,
-          webgl,
-          styleLoaded: Boolean(map.isStyleLoaded()),
-          zoom: +map.getZoom().toFixed(2),
-          bearing: +map.getBearing().toFixed(1),
-          sampledAt: tag,
-        };
-        setDiag(d);
-        // One structured console line per sample — easy to spot in remote
-        // devtools and small enough to copy out of a mobile console.
-        console.log("[plan-map] diag", tag, d);
-      } catch (err) {
-        console.warn("[plan-map] diag capture failed", err);
-      }
-    };
-
     // Primary readiness signal — style spec parsed, canvas painting, markers
     // can be placed. Hide the curtain here even if tiles are still arriving.
     const onStyleLoad = () => {
@@ -343,16 +292,10 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
       } catch {
         /* ignore — fast nav teardown */
       }
-      // Capture after the resize+repaint call so dimensions reflect the
-      // post-resize state, not the stale init-time size.
-      captureDiag("style.load");
     };
-    // Secondary signal — kept so the dev overlay can distinguish "canvas up"
-    // from "all tiles settled". Not required to show the map.
-    const onLoad = () => {
-      setStage("fully-loaded");
-      captureDiag("load");
-    };
+    // Secondary signal — marks "all tiles settled" vs "canvas up". Not
+    // required to show the map but useful for marker-placement correctness.
+    const onLoad = () => setStage("fully-loaded");
     map.on("style.load", onStyleLoad);
     map.on("load", onLoad);
 
@@ -377,19 +320,12 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
     // size cache and never finishes initial tile loading on some mobile
     // browsers.
     let ro: ResizeObserver | null = null;
-    let roSampleCount = 0;
     if (typeof ResizeObserver !== "undefined") {
       ro = new ResizeObserver(() => {
         try {
           map.resize();
         } catch {
           // map may already be removed during fast nav; ignore.
-        }
-        // Re-sample on the first few resize ticks only — enough to see whether
-        // the container grew from 0×0 to real pixels, without spamming logs.
-        if (SHOW_MAP_DEBUG && roSampleCount < 3) {
-          roSampleCount += 1;
-          captureDiag(`ro#${roSampleCount}`);
         }
       });
       ro.observe(container);
@@ -402,7 +338,6 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
       } catch {
         /* ignore */
       }
-      captureDiag("raf");
     });
 
     mapRef.current = map;
@@ -456,34 +391,6 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
 
   const closeSheet = useCallback(() => setSelectedPin(null), []);
 
-  // Smoothly re-center the live MapLibre instance on the selected pin and
-  // zoom to a close-up level. Padding is picked at call time so the pin isn't
-  // obscured by the mobile bottom-sheet or the desktop floating card. Reduced
-  // motion → duration 0 so the camera snaps rather than animates. Fail-safe
-  // on invalid coords so a stray pin can't throw inside MapLibre.
-  const focusOnMap = useCallback(
-    (pin: PlanMapPin) => {
-      const map = mapRef.current;
-      if (!map) return;
-      if (!Number.isFinite(pin.lng) || !Number.isFinite(pin.lat)) return;
-      const isDesktop =
-        typeof window !== "undefined" &&
-        window.matchMedia("(min-width: 1024px)").matches;
-      // Mobile: push the camera up so the pin sits above the bottom card.
-      // Desktop: push right so the pin isn't under the left-anchored card.
-      const padding = isDesktop
-        ? { top: 80, right: 80, bottom: 80, left: 400 }
-        : { top: 80, right: 60, bottom: 300, left: 60 };
-      map.flyTo({
-        center: [pin.lng, pin.lat],
-        zoom: Math.max(map.getZoom(), 15),
-        padding,
-        duration: reduced ? 0 : 900,
-      });
-    },
-    [reduced],
-  );
-
   return (
     <div className="relative -mb-28 h-[calc(100dvh-7rem)] overflow-hidden bg-cream-warm lg:-mb-16 lg:h-[calc(100vh-6rem)] lg:rounded-3xl">
       <div
@@ -535,37 +442,6 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
               </p>
             ) : null}
           </div>
-        </div>
-      ) : null}
-
-      {/* Dev-only diagnostic — shows the lifecycle stage plus a dimension /
-          WebGL snapshot captured at style.load, rAF, and the first few
-          ResizeObserver ticks. Gated on NEXT_PUBLIC_PLAN_MAP_DEBUG so no
-          traveler ever sees it; the chip is purely for on-device inspection
-          when the map area looks blank. */}
-      {SHOW_MAP_DEBUG ? (
-        <div className="pointer-events-none absolute bottom-24 left-3 z-40 max-w-[70vw] rounded bg-charcoal/85 px-2 py-1.5 font-mono text-[10px] leading-tight text-cream lg:bottom-3">
-          <div>
-            map: {stage}
-            {errorMsg ? ` · ${errorMsg}` : ""}
-          </div>
-          {diag ? (
-            <>
-              <div>
-                cont: {diag.containerW}×{diag.containerH} (rect{" "}
-                {diag.rectW}×{diag.rectH})
-              </div>
-              <div>
-                canv: {diag.canvasClientW}×{diag.canvasClientH} (buf{" "}
-                {diag.canvasW}×{diag.canvasH})
-              </div>
-              <div>
-                webgl: {diag.webgl} · style: {diag.styleLoaded ? "y" : "n"} ·
-                zoom: {diag.zoom}
-              </div>
-              <div>sample: {diag.sampledAt}</div>
-            </>
-          ) : null}
         </div>
       ) : null}
 
@@ -622,7 +498,6 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
           pin={selectedPin}
           token={token}
           onClose={closeSheet}
-          onFocusOnMap={focusOnMap}
           reduced={!!reduced}
         />
       ) : null}
@@ -660,17 +535,21 @@ function PinDetailSheet({
   pin,
   token,
   onClose,
-  onFocusOnMap,
   reduced,
 }: {
   pin: PlanMapPin;
   token: string;
   onClose: () => void;
-  onFocusOnMap: (pin: PlanMapPin) => void;
   reduced: boolean;
 }) {
   const style = CATEGORY_STYLE[pin.category];
   const detailHref = `/plan/${token}/destinations/${pin.destinationId}/${style.moduleKey}`;
+  // Only wire the Google Maps action if we have usable coordinates, so a pin
+  // with a stray NaN/undefined never produces a broken `?query=,,` URL.
+  const mapsHref =
+    Number.isFinite(pin.lat) && Number.isFinite(pin.lng)
+      ? googleMapsSearchUrl(pin)
+      : null;
 
   return (
     <>
@@ -725,10 +604,11 @@ function PinDetailSheet({
               </p>
             ) : null}
             {/* Primary + secondary actions, side-by-side. "View details"
-                routes into the destination/module page; "On map" stays here
-                and re-centers the live MapLibre camera on this pin. The
-                existing external "Open in Google Maps" link remains as a
-                quiet tertiary action for travelers who want turn-by-turn. */}
+                routes into the destination/module page; "On map" opens the
+                pin in Google Maps (web on desktop; app handoff on mobile).
+                No tertiary duplicate — the existing pin.mapUrl field is
+                intentionally not surfaced here to avoid showing two Google
+                Maps actions for the same place. */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Link
                 href={detailHref}
@@ -740,31 +620,20 @@ function PinDetailSheet({
                   className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0"
                 />
               </Link>
-              <button
-                type="button"
-                onClick={(e) => {
-                  // Guard against the click bubbling to the mobile backdrop
-                  // button (which lives behind the card and would otherwise
-                  // dismiss the sheet) or being treated as a view-details tap.
-                  e.stopPropagation();
-                  onFocusOnMap(pin);
-                }}
-                aria-label={`Center the map on ${pin.name}`}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-brand-green/35 bg-white px-4 py-2 text-[13px] font-medium text-brand-green-dark shadow-sm transition-colors hover:border-brand-green hover:bg-brand-green-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
-              >
-                <LocateFixed size={13} aria-hidden />
-                On map
-              </button>
-              {pin.mapUrl ? (
-                <Link
-                  href={pin.mapUrl}
+              {mapsHref ? (
+                <a
+                  href={mapsHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-auto inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-green-dark transition-colors hover:text-charcoal"
+                  // Stop the click from bubbling to the mobile backdrop
+                  // (which dismisses the sheet) or any ancestor handler.
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Open ${pin.name} in Google Maps`}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-brand-green/35 bg-white px-4 py-2 text-[13px] font-medium text-brand-green-dark shadow-sm transition-colors hover:border-brand-green hover:bg-brand-green-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green"
                 >
-                  <ExternalLink size={13} />
-                  Google Maps
-                </Link>
+                  <ExternalLink size={13} aria-hidden />
+                  On map
+                </a>
               ) : null}
             </div>
           </article>
