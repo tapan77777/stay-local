@@ -164,12 +164,29 @@ const SHOW_MAP_DEBUG =
   process.env.NODE_ENV !== "production" ||
   process.env.NEXT_PUBLIC_PLAN_MAP_DEBUG === "1";
 
+interface MapDiagnostics {
+  containerW: number;
+  containerH: number;
+  rectW: number;
+  rectH: number;
+  canvasClientW: number;
+  canvasClientH: number;
+  canvasW: number;
+  canvasH: number;
+  webgl: "webgl2" | "webgl" | "none";
+  styleLoaded: boolean;
+  zoom: number;
+  bearing: number;
+  sampledAt: string;
+}
+
 export function PlanMap({ token, pins, destinations }: PlanMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [stage, setStage] = useState<MapStage>("init");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [diag, setDiag] = useState<MapDiagnostics | null>(null);
   const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
   const [selectedPin, setSelectedPin] = useState<PlanMapPin | null>(null);
   const reduced = useReducedMotion();
@@ -259,19 +276,67 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
       "top-right",
     );
 
+    // Debug-only: snapshot container/canvas/state so a phone test can see the
+    // actual sizing at the moment the style finished loading. Guarded on
+    // SHOW_MAP_DEBUG so no production traveler ever triggers these reads.
+    const captureDiag = (tag: string) => {
+      if (!SHOW_MAP_DEBUG) return;
+      try {
+        const canvas = map.getCanvas();
+        const rect = container.getBoundingClientRect();
+        const gl2 = canvas.getContext("webgl2");
+        const gl1 = gl2 ? null : canvas.getContext("webgl");
+        const webgl: MapDiagnostics["webgl"] = gl2
+          ? "webgl2"
+          : gl1
+            ? "webgl"
+            : "none";
+        const d: MapDiagnostics = {
+          containerW: container.clientWidth,
+          containerH: container.clientHeight,
+          rectW: Math.round(rect.width),
+          rectH: Math.round(rect.height),
+          canvasClientW: canvas.clientWidth,
+          canvasClientH: canvas.clientHeight,
+          canvasW: canvas.width,
+          canvasH: canvas.height,
+          webgl,
+          styleLoaded: Boolean(map.isStyleLoaded()),
+          zoom: +map.getZoom().toFixed(2),
+          bearing: +map.getBearing().toFixed(1),
+          sampledAt: tag,
+        };
+        setDiag(d);
+        // One structured console line per sample — easy to spot in remote
+        // devtools and small enough to copy out of a mobile console.
+        console.log("[plan-map] diag", tag, d);
+      } catch (err) {
+        console.warn("[plan-map] diag capture failed", err);
+      }
+    };
+
     // Primary readiness signal — style spec parsed, canvas painting, markers
     // can be placed. Hide the curtain here even if tiles are still arriving.
     const onStyleLoad = () => {
       setStage((s) => (s === "fully-loaded" ? s : "style-loaded"));
       try {
         map.resize();
+        // Force one repaint after resize so the canvas commits at the real
+        // size even if MapLibre's internal dirty flag didn't flip.
+        map.triggerRepaint();
       } catch {
         /* ignore — fast nav teardown */
       }
+      // Capture after the resize+repaint call so dimensions reflect the
+      // post-resize state, not the stale init-time size.
+      captureDiag("style.load");
     };
     // Secondary signal — kept so the dev overlay can distinguish "canvas up"
     // from "all tiles settled". Not required to show the map.
-    const onLoad = () => setStage("fully-loaded");
+    const onLoad = () => {
+      setStage("fully-loaded");
+      captureDiag("load");
+    };
     map.on("style.load", onStyleLoad);
     map.on("load", onLoad);
 
@@ -296,12 +361,19 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
     // size cache and never finishes initial tile loading on some mobile
     // browsers.
     let ro: ResizeObserver | null = null;
+    let roSampleCount = 0;
     if (typeof ResizeObserver !== "undefined") {
       ro = new ResizeObserver(() => {
         try {
           map.resize();
         } catch {
           // map may already be removed during fast nav; ignore.
+        }
+        // Re-sample on the first few resize ticks only — enough to see whether
+        // the container grew from 0×0 to real pixels, without spamming logs.
+        if (SHOW_MAP_DEBUG && roSampleCount < 3) {
+          roSampleCount += 1;
+          captureDiag(`ro#${roSampleCount}`);
         }
       });
       ro.observe(container);
@@ -314,6 +386,7 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
       } catch {
         /* ignore */
       }
+      captureDiag("raf");
     });
 
     mapRef.current = map;
@@ -409,14 +482,34 @@ export function PlanMap({ token, pins, destinations }: PlanMapProps) {
         </div>
       ) : null}
 
-      {/* Dev-only diagnostic — shows which stage the map reached so phone
-          testing can see "style-loading", "style-loaded", "fully-loaded",
-          or "error" without a remote debugger. Gated on NODE_ENV so it
-          never ships to the traveler. */}
+      {/* Dev-only diagnostic — shows the lifecycle stage plus a dimension /
+          WebGL snapshot captured at style.load, rAF, and the first few
+          ResizeObserver ticks. Gated on NEXT_PUBLIC_PLAN_MAP_DEBUG so no
+          traveler ever sees it; the chip is purely for on-device inspection
+          when the map area looks blank. */}
       {SHOW_MAP_DEBUG ? (
-        <div className="pointer-events-none absolute bottom-24 left-3 z-40 rounded bg-charcoal/85 px-2 py-1 font-mono text-[10px] leading-none text-cream lg:bottom-3">
-          map: {stage}
-          {errorMsg ? ` · ${errorMsg}` : ""}
+        <div className="pointer-events-none absolute bottom-24 left-3 z-40 max-w-[70vw] rounded bg-charcoal/85 px-2 py-1.5 font-mono text-[10px] leading-tight text-cream lg:bottom-3">
+          <div>
+            map: {stage}
+            {errorMsg ? ` · ${errorMsg}` : ""}
+          </div>
+          {diag ? (
+            <>
+              <div>
+                cont: {diag.containerW}×{diag.containerH} (rect{" "}
+                {diag.rectW}×{diag.rectH})
+              </div>
+              <div>
+                canv: {diag.canvasClientW}×{diag.canvasClientH} (buf{" "}
+                {diag.canvasW}×{diag.canvasH})
+              </div>
+              <div>
+                webgl: {diag.webgl} · style: {diag.styleLoaded ? "y" : "n"} ·
+                zoom: {diag.zoom}
+              </div>
+              <div>sample: {diag.sampledAt}</div>
+            </>
+          ) : null}
         </div>
       ) : null}
 
