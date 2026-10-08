@@ -10,7 +10,13 @@ import {
   updateDestinationAction,
 } from "@/lib/plan/actions-2a";
 import { toDateInputValue } from "@/lib/plan/format";
-import type { Destination } from "@/lib/plan/types";
+import {
+  MODULE_KEYS,
+  MODULE_LABEL,
+  type Destination,
+  type ModuleKey,
+} from "@/lib/plan/types";
+import { ImageUrlField } from "./image-url-field";
 import { SaveState } from "./save-state";
 
 type Mode = "create" | "edit";
@@ -91,6 +97,10 @@ export function DestinationForm({ planId, mode, destination }: Props) {
           defaultValue={destination?.heroImageUrl ?? ""}
           placeholder="https://…"
         />
+        <p className="text-[11px] leading-snug text-muted">
+          Used as the Journey hero and as the fallback artwork for any
+          module card without its own image.
+        </p>
       </div>
 
       <div className="space-y-1.5">
@@ -102,6 +112,27 @@ export function DestinationForm({ planId, mode, destination }: Props) {
           placeholder="A warm, personal note from you about this place"
         />
       </div>
+
+      <fieldset className="space-y-3 rounded-xl border border-border bg-charcoal/[0.02] p-4">
+        <legend className="px-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+          Module card images (optional)
+        </legend>
+        <p className="-mt-2 text-[11.5px] leading-snug text-muted">
+          Each row below sets the artwork for the matching module card on
+          the Journey page. Leave blank to fall back to the destination
+          hero. Use the same hosts allowed in <code>next.config.ts</code>.
+        </p>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {(MODULE_KEYS as readonly ModuleKey[]).map((k) => (
+            <ImageUrlField
+              key={k}
+              name={`moduleImageUrl_${k}`}
+              label={`${MODULE_LABEL[k]} card`}
+              defaultValue={destination?.moduleImageUrls?.[k] ?? ""}
+            />
+          ))}
+        </div>
+      </fieldset>
 
       <div className="flex items-center justify-end gap-3 pt-1">
         <SaveState pending={pending} error={state?.error} />

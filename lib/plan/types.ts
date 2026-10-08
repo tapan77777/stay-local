@@ -104,6 +104,11 @@ export interface Destination {
   nights: number | null;
   heroImageUrl: string;
   tapanIntro: string;
+  // Per-module card artwork for the Journey page. Empty string = "no
+  // override; fall back to heroImageUrl, then to the gradient placeholder".
+  // Keyed on the same strings as `ModuleKey` so the renderer can look up
+  // moduleImageUrls[key] directly.
+  moduleImageUrls: Record<ModuleKey, string>;
   createdAt: string;
   updatedAt: string;
 }

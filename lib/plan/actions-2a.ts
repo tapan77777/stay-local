@@ -65,11 +65,13 @@ import { updatePlanHelp, updatePlanOverview } from "./plans";
 import { swapPosition } from "./reorder";
 import {
   GUIDE_CATEGORIES,
+  MODULE_KEYS,
   NOTE_TYPES,
   PIN_CATEGORIES,
   PLACE_PRIORITIES,
   TRANSPORT_TYPES,
   type GuideCategory,
+  type ModuleKey,
   type NoteType,
   type PinCategory,
   type PlacePriority,
@@ -117,6 +119,19 @@ function parseEnum<T extends readonly string[]>(
   return (values as readonly string[]).includes(input)
     ? (input as T[number])
     : fallback;
+}
+
+// Field name convention: `moduleImageUrl_<key>` so one FormData per module
+// without colliding with the hero `heroImageUrl` field. Keys are the same
+// strings used by `ModuleKey`, so this helper is the single mapping place.
+function parseModuleImageUrls(
+  formData: FormData
+): Record<ModuleKey, string> {
+  const out = {} as Record<ModuleKey, string>;
+  for (const key of MODULE_KEYS) {
+    out[key] = str(formData, `moduleImageUrl_${key}`);
+  }
+  return out;
 }
 
 function revalidatePlan(planId: string) {
@@ -187,6 +202,7 @@ export async function createDestinationAction(
     nights: parseInt32(formData, "nights"),
     heroImageUrl: str(formData, "heroImageUrl"),
     tapanIntro: rawStr(formData, "tapanIntro"),
+    moduleImageUrls: parseModuleImageUrls(formData),
   });
   revalidatePlan(planId);
   redirect(`/admin/plans/${planId}/destinations/${dest.id}`);
@@ -209,6 +225,7 @@ export async function updateDestinationAction(
     nights: parseInt32(formData, "nights"),
     heroImageUrl: str(formData, "heroImageUrl"),
     tapanIntro: rawStr(formData, "tapanIntro"),
+    moduleImageUrls: parseModuleImageUrls(formData),
   });
   if (!updated) return { error: "Destination not found." };
   revalidateDestination(planId, destinationId);
