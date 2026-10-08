@@ -14,6 +14,7 @@ import { ExperiencesRail } from "@/components/site/experiences-rail";
 import { FounderNote } from "@/components/site/founder-note";
 import { Hero } from "@/components/site/hero";
 import { IndependentTravel } from "@/components/site/independent-travel";
+import { PlanShowcase } from "@/components/site/plan-showcase";
 import { Reveal } from "@/components/site/reveal";
 import { ServicesSelector } from "@/components/site/services-selector";
 import { TravelStyles } from "@/components/site/travel-styles";
@@ -36,6 +37,7 @@ export default function HomePage() {
     <>
       <JsonLd data={orgJsonLd()} />
       <Hero />
+      <PlanShowcase />
       <IndependentTravel />
       <TravelStyles />
       <FounderNote />
