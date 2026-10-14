@@ -14,6 +14,7 @@ import { useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { whatsappHref, firstName } from "@/lib/plan/format";
 import { StayLocalMonogram } from "@/components/site/sl-monogram";
+import { GuestAvatar } from "./guest-avatar";
 
 /*
  * The authenticated traveler shell. Lives OUTSIDE page.tsx so each page can
@@ -34,6 +35,9 @@ export interface PlanShellProps {
   token: string;
   tripTitle: string;
   travelerDisplayName: string;
+  // Optional direct URL — reused from the plan's `profile_photo_url`.
+  // Empty / missing / broken falls back to the SL monogram.
+  profilePhotoUrl?: string | null;
   whatsappContact?: string | null;
   children: ReactNode;
 }
@@ -92,6 +96,7 @@ export function PlanShell({
   token,
   tripTitle,
   travelerDisplayName,
+  profilePhotoUrl,
   whatsappContact,
   children,
 }: PlanShellProps) {
@@ -117,9 +122,16 @@ export function PlanShell({
             className="group flex min-w-0 items-center gap-3"
             aria-label="Trip home"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-brand-green/25 bg-white text-brand-green-dark shadow-[0_1px_2px_rgba(20,30,25,0.04)] lg:h-10 lg:w-10">
-              <StayLocalMonogram className="h-[20px] w-[20px] lg:h-[22px] lg:w-[22px]" />
-            </span>
+            <GuestAvatar
+              key={profilePhotoUrl ?? ""}
+              photoUrl={profilePhotoUrl}
+              guestFullName={travelerDisplayName}
+              imgSizes="40px"
+              className="h-9 w-9 border border-brand-green/25 bg-white text-brand-green-dark shadow-[0_1px_2px_rgba(20,30,25,0.04)] lg:h-10 lg:w-10"
+              fallback={
+                <StayLocalMonogram className="h-[20px] w-[20px] lg:h-[22px] lg:w-[22px]" />
+              }
+            />
             <span className="min-w-0">
               <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-brand-green-dark">
                 {name ? `${name}'s journey` : "Your journey"}

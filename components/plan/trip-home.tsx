@@ -19,6 +19,7 @@ import {
 } from "@/lib/plan/format";
 import type { DestinationWithCounts } from "@/lib/plan/customer-view";
 import type { Destination, PlanWithCustomer } from "@/lib/plan/types";
+import { GuestAvatar } from "./guest-avatar";
 
 /*
  * Trip Home — the integrated first screen after unlocking. Composes, top to
@@ -178,8 +179,10 @@ function HeroWithSummary({
                   <GuestAvatar
                     key={profilePhotoUrl}
                     photoUrl={profilePhotoUrl}
-                    initial={initial}
                     guestFullName={guestFullName}
+                    imgSizes="36px"
+                    className="h-9 w-9 bg-white/95 text-[12px] font-semibold text-brand-green-dark shadow-[0_1px_2px_rgba(20,30,25,0.08)] ring-1 ring-white/70"
+                    fallback={<span aria-hidden>{initial || "SL"}</span>}
                   />
                   <span className="min-w-0 leading-tight drop-shadow-sm">
                     <span className="block text-[10px] font-medium uppercase tracking-[0.22em] text-cream/80">
@@ -860,46 +863,6 @@ function TapanNoteModal({
 }
 
 /* ------------------------------------------------------------------------ */
-
-function GuestAvatar({
-  photoUrl,
-  initial,
-  guestFullName,
-}: {
-  photoUrl: string;
-  initial: string;
-  guestFullName: string;
-}) {
-  const trimmed = photoUrl?.trim() ?? "";
-  // Remount via `key={trimmed}` at the call site means `failed` resets
-  // automatically whenever the URL changes — no effect needed.
-  const [failed, setFailed] = useState(false);
-  const showPhoto = trimmed.length > 0 && !failed;
-  const altText = showPhoto
-    ? guestFullName
-      ? `${guestFullName} profile photo`
-      : "Guest profile photo"
-    : "";
-
-  return (
-    <span className="relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/95 text-[12px] font-semibold text-brand-green-dark shadow-[0_1px_2px_rgba(20,30,25,0.08)] ring-1 ring-white/70">
-      {showPhoto ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={trimmed}
-          alt={altText}
-          loading="lazy"
-          decoding="async"
-          sizes="36px"
-          onError={() => setFailed(true)}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : (
-        <span aria-hidden>{initial || "SL"}</span>
-      )}
-    </span>
-  );
-}
 
 function PhotoFallback() {
   return (

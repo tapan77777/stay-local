@@ -21,6 +21,7 @@ export default async function PlanGuidePage({
       token={token}
       tripTitle={plan.title}
       travelerDisplayName={plan.customer?.name || session.name}
+      profilePhotoUrl={plan.profilePhotoUrl}
       whatsappContact={plan.whatsappContact}
     >
       {items.length === 0 ? (

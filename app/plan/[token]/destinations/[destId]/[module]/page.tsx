@@ -176,6 +176,7 @@ export default async function DestinationModulePage({
       token={token}
       tripTitle={plan.title}
       travelerDisplayName={plan.customer?.name || session.name}
+      profilePhotoUrl={plan.profilePhotoUrl}
       whatsappContact={plan.whatsappContact}
     >
       <div className="pb-6">
@@ -209,6 +210,7 @@ export default async function DestinationModulePage({
         token={token}
         tripTitle={plan.title}
         travelerDisplayName={plan.customer?.name || session.name}
+        profilePhotoUrl={plan.profilePhotoUrl}
         whatsappContact={plan.whatsappContact}
       >
         <PlanPlaceholder

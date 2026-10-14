@@ -22,6 +22,7 @@ export default async function JourneyPage({
       token={token}
       tripTitle={plan.title}
       travelerDisplayName={plan.customer?.name || session.name}
+      profilePhotoUrl={plan.profilePhotoUrl}
       whatsappContact={plan.whatsappContact}
     >
       <JourneyTimeline

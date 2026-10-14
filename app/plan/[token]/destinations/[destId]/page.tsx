@@ -37,6 +37,7 @@ export default async function DestinationHubPage({
       token={token}
       tripTitle={plan.title}
       travelerDisplayName={plan.customer?.name || session.name}
+      profilePhotoUrl={plan.profilePhotoUrl}
       whatsappContact={plan.whatsappContact}
     >
       <DestinationHub

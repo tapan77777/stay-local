@@ -31,6 +31,7 @@ export default async function PlanMapPage({
         token={token}
         tripTitle={plan.title}
         travelerDisplayName={plan.customer?.name || session.name}
+        profilePhotoUrl={plan.profilePhotoUrl}
         whatsappContact={plan.whatsappContact}
       >
         <PlanPlaceholder
@@ -50,6 +51,7 @@ export default async function PlanMapPage({
       token={token}
       tripTitle={plan.title}
       travelerDisplayName={plan.customer?.name || session.name}
+      profilePhotoUrl={plan.profilePhotoUrl}
       whatsappContact={plan.whatsappContact}
     >
       <PlanMap token={token} pins={data.pins} destinations={data.destinations} />
