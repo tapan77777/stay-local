@@ -59,6 +59,7 @@ async function run() {
     "schema-2a.sql",
     "schema-3-devices.sql",
     "schema-4-module-images.sql",
+    "schema-5-profile-photo.sql",
   ];
   for (const file of schemaFiles) {
     const schemaPath = path.join(ROOT, "lib", "plan", file);

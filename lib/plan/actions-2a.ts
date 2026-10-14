@@ -158,6 +158,7 @@ export async function updateOverviewAction(
     tripDays: parseInt32(formData, "tripDays"),
     travelStyle: str(formData, "travelStyle"),
     budgetStyle: str(formData, "budgetStyle"),
+    profilePhotoUrl: str(formData, "profilePhotoUrl"),
     specialPreferences: rawStr(formData, "specialPreferences"),
     importantNotes: rawStr(formData, "importantNotes"),
   });

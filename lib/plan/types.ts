@@ -42,6 +42,10 @@ export interface Plan {
   tripDays: number | null;
   travelStyle: string;
   budgetStyle: string;
+  // Optional direct URL (e.g. Cloudinary) rendered inside the Namaste
+  // avatar on the guest-facing hero. Empty string = fall back to the
+  // existing initial placeholder.
+  profilePhotoUrl: string;
   specialPreferences: string;
   importantNotes: string;
   whatsappContact: string;

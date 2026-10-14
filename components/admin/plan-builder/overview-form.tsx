@@ -60,6 +60,23 @@ export function OverviewForm({ plan }: { plan: Plan }) {
       </div>
 
       <div className="space-y-1.5">
+        <Label htmlFor="profilePhotoUrl">Profile photo URL (optional)</Label>
+        <Input
+          id="profilePhotoUrl"
+          name="profilePhotoUrl"
+          type="url"
+          inputMode="url"
+          autoComplete="off"
+          defaultValue={plan.profilePhotoUrl}
+          placeholder="https://res.cloudinary.com/…/guest.jpg"
+        />
+        <p className="text-[11px] text-muted">
+          Shown in the Namaste avatar on this plan&apos;s homepage. Leave empty
+          for the default initial placeholder.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
         <Label htmlFor="specialPreferences">Special preferences</Label>
         <Textarea
           id="specialPreferences"

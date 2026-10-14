@@ -43,9 +43,9 @@ export function TripHome({
 }: TripHomeProps) {
   const [noteOpen, setNoteOpen] = useState(false);
 
-  const firstName =
-    (plan.customer?.name || plan.travelerName || "").trim().split(" ")[0] ||
-    "";
+  const guestFullName =
+    (plan.customer?.name || plan.travelerName || "").trim();
+  const firstName = guestFullName.split(" ")[0] || "";
   const dateLine = formatTripRange(plan.startDate, plan.endDate);
   const days = tripLengthDays(plan.startDate, plan.endDate, plan.tripDays);
   const heroImage = destinations.find((d) => d.destination.heroImageUrl)
@@ -75,6 +75,8 @@ export function TripHome({
       <HeroWithSummary
         token={token}
         firstName={firstName}
+        guestFullName={guestFullName}
+        profilePhotoUrl={plan.profilePhotoUrl}
         heroImage={heroImage}
         dateLine={dateLine}
         metaLine={metaLine}
@@ -128,6 +130,8 @@ export function TripHome({
 function HeroWithSummary({
   token,
   firstName,
+  guestFullName,
+  profilePhotoUrl,
   heroImage,
   dateLine,
   metaLine,
@@ -135,6 +139,8 @@ function HeroWithSummary({
 }: {
   token: string;
   firstName: string;
+  guestFullName: string;
+  profilePhotoUrl: string;
   heroImage?: string;
   dateLine: string;
   metaLine: string;
@@ -169,12 +175,12 @@ function HeroWithSummary({
               {/* Top-left identity row */}
               <div className="absolute inset-x-0 top-0 px-5 pt-5 sm:px-7 sm:pt-6 lg:px-9 lg:pt-7">
                 <div className="flex items-center gap-2.5">
-                  <span
-                    aria-hidden
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/95 text-[12px] font-semibold text-brand-green-dark shadow-[0_1px_2px_rgba(20,30,25,0.08)]"
-                  >
-                    {initial || "SL"}
-                  </span>
+                  <GuestAvatar
+                    key={profilePhotoUrl}
+                    photoUrl={profilePhotoUrl}
+                    initial={initial}
+                    guestFullName={guestFullName}
+                  />
                   <span className="min-w-0 leading-tight drop-shadow-sm">
                     <span className="block text-[10px] font-medium uppercase tracking-[0.22em] text-cream/80">
                       Namaste
@@ -854,6 +860,46 @@ function TapanNoteModal({
 }
 
 /* ------------------------------------------------------------------------ */
+
+function GuestAvatar({
+  photoUrl,
+  initial,
+  guestFullName,
+}: {
+  photoUrl: string;
+  initial: string;
+  guestFullName: string;
+}) {
+  const trimmed = photoUrl?.trim() ?? "";
+  // Remount via `key={trimmed}` at the call site means `failed` resets
+  // automatically whenever the URL changes — no effect needed.
+  const [failed, setFailed] = useState(false);
+  const showPhoto = trimmed.length > 0 && !failed;
+  const altText = showPhoto
+    ? guestFullName
+      ? `${guestFullName} profile photo`
+      : "Guest profile photo"
+    : "";
+
+  return (
+    <span className="relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/95 text-[12px] font-semibold text-brand-green-dark shadow-[0_1px_2px_rgba(20,30,25,0.08)] ring-1 ring-white/70">
+      {showPhoto ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={trimmed}
+          alt={altText}
+          loading="lazy"
+          decoding="async"
+          sizes="36px"
+          onError={() => setFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        <span aria-hidden>{initial || "SL"}</span>
+      )}
+    </span>
+  );
+}
 
 function PhotoFallback() {
   return (

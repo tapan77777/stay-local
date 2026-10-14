@@ -24,6 +24,7 @@ interface PlanRow {
   trip_days: number | null;
   travel_style: string;
   budget_style: string;
+  profile_photo_url: string;
   special_preferences: string;
   important_notes: string;
   whatsapp_contact: string;
@@ -57,6 +58,7 @@ const PLAN_RETURNING = `
   trip_days,
   travel_style,
   budget_style,
+  profile_photo_url,
   special_preferences,
   important_notes,
   whatsapp_contact,
@@ -87,6 +89,7 @@ const PLAN_JOIN_SQL = `
     p.trip_days,
     p.travel_style,
     p.budget_style,
+    p.profile_photo_url,
     p.special_preferences,
     p.important_notes,
     p.whatsapp_contact,
@@ -120,6 +123,7 @@ function rowToPlan(r: PlanRow): Plan {
     tripDays: r.trip_days ?? null,
     travelStyle: r.travel_style ?? "",
     budgetStyle: r.budget_style ?? "",
+    profilePhotoUrl: r.profile_photo_url ?? "",
     specialPreferences: r.special_preferences ?? "",
     importantNotes: r.important_notes ?? "",
     whatsappContact: r.whatsapp_contact ?? "",
@@ -279,6 +283,7 @@ export interface UpdatePlanOverviewInput {
   tripDays: number | null;
   travelStyle: string;
   budgetStyle: string;
+  profilePhotoUrl: string;
   specialPreferences: string;
   importantNotes: string;
 }
@@ -294,8 +299,9 @@ export async function updatePlanOverview(
       trip_days            = $3,
       travel_style         = $4,
       budget_style         = $5,
-      special_preferences  = $6,
-      important_notes      = $7,
+      profile_photo_url    = $6,
+      special_preferences  = $7,
+      important_notes      = $8,
       updated_at           = now()
     WHERE id = $1
     RETURNING ${PLAN_RETURNING}
@@ -306,6 +312,7 @@ export async function updatePlanOverview(
       input.tripDays,
       input.travelStyle.trim(),
       input.budgetStyle.trim(),
+      input.profilePhotoUrl.trim(),
       input.specialPreferences.trim(),
       input.importantNotes.trim(),
     ]

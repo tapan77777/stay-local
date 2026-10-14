@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { StayLocalMonogram } from "./sl-monogram";
 
 export function BrandMark({
   className,
@@ -24,7 +25,7 @@ export function BrandMark({
           light ? "bg-brand-green-dark" : "bg-brand-green"
         )}
       >
-        <span className="font-serif text-[15px] leading-none">S</span>
+        <StayLocalMonogram className="h-[18px] w-[18px]" />
       </span>
       {!compact && (
         <span className="flex flex-col leading-none">
