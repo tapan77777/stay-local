@@ -1,0 +1,15 @@
+{
+  "phase": "auditfull",
+  "command": "pnpm audit --json",
+  "exit": 1,
+  "lockfileUnchanged": true,
+  "passed": true,
+  "checkedAt": "2026-11-02T04:11:58.824Z",
+  "audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 4,
+    "high": 0,
+    "critical": 0
+  }
+}

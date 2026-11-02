@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-11-01T18:22:13.791Z",
+  "deploymentId": "dpl_9ncc6Ao2kdcWtQtupBCNDm6D7wtt",
+  "url": "stay-local-1r8z8fbhi-tapan77777s-projects.vercel.app",
+  "projectId": "prj_9FAWBUHlqxFlk00cFMMSU9uVWV8e",
+  "state": "READY",
+  "target": "production",
+  "aliasAssigned": true,
+  "autoAssignCustomDomains": false,
+  "errorCode": null,
+  "productionTarget": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom",
+  "allLiveAliasesUnchanged": true,
+  "aliases": [
+    {
+      "alias": "stay-local-beryl.vercel.app",
+      "deploymentId": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom"
+    },
+    {
+      "alias": "stay-local-tapan77777s-projects.vercel.app",
+      "deploymentId": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom"
+    },
+    {
+      "alias": "stay-local-git-main-tapan77777s-projects.vercel.app",
+      "deploymentId": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom"
+    }
+  ],
+  "environmentMetadataUnchanged": true,
+  "protectionUnchanged": true,
+  "nodeVersion": "24.x",
+  "databaseIdentityQueryPerformed": false,
+  "deleted": true,
+  "status": "DELETED_AFTER_OWNER_APPROVAL_AND_IDENTITY_SCHEMA_CHECKS",
+  "cleanupHold": null,
+  "aliasRestoredAt": "2026-11-02T03:19:14.050Z",
+  "aliasRestorationVerified": true,
+  "cleanupReceipt": "final-cleanup-result.json"
+}

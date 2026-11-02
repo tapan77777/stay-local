@@ -1,0 +1,158 @@
+{
+  "status": "BLOCKED",
+  "target": {
+    "vercelProject": "stay-local",
+    "vercelProjectId": "prj_9FAWBUHlqxFlk00cFMMSU9uVWV8e",
+    "domain": "stay-local-beryl.vercel.app",
+    "neonProject": "staylocal-2",
+    "neonProjectId": "lucky-waterfall-84436365",
+    "branchId": "br-broad-pond-b3nfbi06"
+  },
+  "liveCommit": "7e84d3d29acc0374384f39277b525bb8e59eb71f",
+  "localCodeAndBuildReady": true,
+  "deploymentApprovalGranted": false,
+  "productionModified": false,
+  "tests": {
+    "automated": 36,
+    "deviceAssertions": 19,
+    "existingHttpAssertions": 37,
+    "desktopViewport": "1440x900",
+    "mobileViewports": [
+      "390x844",
+      "320x568"
+    ],
+    "browser": "Chrome via Playwright against disposable PGlite"
+  },
+  "checks": {
+    "install": {
+      "phase": "install",
+      "command": "npx --yes pnpm@9.15.9 install --frozen-lockfile",
+      "exit": 0,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:05:52.359Z"
+    },
+    "test": {
+      "phase": "test",
+      "command": "pnpm test",
+      "exit": 0,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:07:13.887Z"
+    },
+    "devices": {
+      "phase": "devices",
+      "command": "pnpm run plan:test:devices:isolated",
+      "exit": 0,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:07:11.700Z"
+    },
+    "lint": {
+      "phase": "lint",
+      "command": "pnpm run lint",
+      "exit": 0,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:07:15.192Z"
+    },
+    "build": {
+      "phase": "build",
+      "command": "npx --yes pnpm@9.15.9 run prebuild && npx --yes pnpm@9.15.9 run build",
+      "exit": 0,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:10:40.009Z"
+    },
+    "typecheck": {
+      "phase": "typecheck",
+      "command": "pnpm exec next typegen && pnpm exec tsc --noEmit",
+      "exit": 0,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:12:24.689Z"
+    },
+    "browser": {
+      "phase": "browser",
+      "command": "pnpm run plan:test:browser:isolated",
+      "exit": 0,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:12:44.013Z"
+    },
+    "auditfull": {
+      "phase": "auditfull",
+      "command": "pnpm audit --json",
+      "exit": 1,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:11:58.824Z",
+      "audit": {
+        "info": 0,
+        "low": 0,
+        "moderate": 4,
+        "high": 0,
+        "critical": 0
+      }
+    },
+    "auditruntime": {
+      "phase": "auditruntime",
+      "command": "pnpm audit --prod --json",
+      "exit": 1,
+      "lockfileUnchanged": true,
+      "passed": true,
+      "checkedAt": "2026-11-02T04:11:55.098Z",
+      "audit": {
+        "info": 0,
+        "low": 0,
+        "moderate": 3,
+        "high": 0,
+        "critical": 0
+      }
+    }
+  },
+  "missingProductionExcelObjects": [
+    "plans.content_version",
+    "plan_excel_previews",
+    "plan_excel_revisions",
+    "3 functions",
+    "12 version triggers",
+    "preview expiry index"
+  ],
+  "blockers": [
+    "Production schema-6 not applied; requires explicit approval after backup/recovery.",
+    "Production-specific backup and successful disposable restoration not yet executed.",
+    "Previously exposed database-role credential revocation/rotation not confirmed; requires coordinated approved remediation.",
+    "Final production release approval not granted; no deployment/push performed."
+  ],
+  "localBuildConfigurationFixed": [
+    "pnpm@9.15.9 pinned",
+    "pnpm lock updated; competing npm lock removed",
+    "exact frozen install/prebuild/build in vercel.json",
+    "private files/operator outputs excluded from Vercel uploads",
+    "generated outputs excluded from TypeScript"
+  ],
+  "workingTreeChangedTrackedFiles": [
+    "app/admin/plans/[id]/page.tsx",
+    "app/admin/plans/page.tsx",
+    "lib/plan/db.ts",
+    "lib/plan/destinations.ts",
+    "lib/plan/documents.ts",
+    "lib/plan/experiences.ts",
+    "lib/plan/foods.ts",
+    "lib/plan/india-guide.ts",
+    "lib/plan/itinerary.ts",
+    "lib/plan/map-pins.ts",
+    "lib/plan/notes.ts",
+    "lib/plan/places.ts",
+    "lib/plan/reorder.ts",
+    "lib/plan/stays.ts",
+    "lib/plan/transports.ts",
+    "package-lock.json",
+    "package.json",
+    "pnpm-lock.yaml",
+    "scripts/plan-migrate.mjs",
+    "tsconfig.json"
+  ],
+  "sourceManifest": "source-manifest.json"
+}

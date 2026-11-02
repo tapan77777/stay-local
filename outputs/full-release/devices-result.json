@@ -1,0 +1,8 @@
+{
+  "phase": "devices",
+  "command": "pnpm run plan:test:devices:isolated",
+  "exit": 0,
+  "lockfileUnchanged": true,
+  "passed": true,
+  "checkedAt": "2026-11-02T04:07:11.700Z"
+}

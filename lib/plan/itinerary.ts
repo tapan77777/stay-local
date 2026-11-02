@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, dateToString, timestampToString } from "./db";
+import { mutatePlanContent, sql, dateToString, timestampToString } from "./db";
 import type { ItineraryDay } from "./types";
 
 interface Row {
@@ -43,19 +43,21 @@ function rowToDay(r: Row): ItineraryDay {
 }
 
 export async function listItineraryDays(
-  destinationId: string
+  destinationId: string,
 ): Promise<ItineraryDay[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM itinerary_days WHERE destination_id = $1 ORDER BY position ASC, created_at ASC`,
-    [destinationId]
+    [destinationId],
   )) as Row[];
   return rows.map(rowToDay);
 }
 
-export async function getItineraryDay(id: string): Promise<ItineraryDay | null> {
+export async function getItineraryDay(
+  id: string,
+): Promise<ItineraryDay | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM itinerary_days WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToDay(rows[0]) : null;
 }
@@ -73,9 +75,12 @@ export interface ItineraryDayInput {
 
 export async function createItineraryDay(
   destinationId: string,
-  input: ItineraryDayInput
+  input: ItineraryDayInput,
 ): Promise<ItineraryDay> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "itinerary_days",
+    "destination",
+    destinationId,
     `
     INSERT INTO itinerary_days (
       destination_id, position, day_label, day_date,
@@ -98,16 +103,19 @@ export async function createItineraryDay(
       input.notes,
       input.recommendedTiming,
       input.optionalItems,
-    ]
+    ],
   )) as Row[];
   return rowToDay(rows[0]);
 }
 
 export async function updateItineraryDay(
   id: string,
-  input: ItineraryDayInput
+  input: ItineraryDayInput,
 ): Promise<ItineraryDay | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "itinerary_days",
+    "record",
+    id,
     `
     UPDATE itinerary_days SET
       day_label           = $2,
@@ -132,15 +140,18 @@ export async function updateItineraryDay(
       input.notes,
       input.recommendedTiming,
       input.optionalItems,
-    ]
+    ],
   )) as Row[];
   return rows[0] ? rowToDay(rows[0]) : null;
 }
 
 export async function deleteItineraryDay(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "itinerary_days",
+    "record",
+    id,
     `DELETE FROM itinerary_days WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

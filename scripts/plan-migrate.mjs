@@ -1,206 +1,116 @@
 #!/usr/bin/env node
-// StayLocal Plan — Phase 1 database migration
-//
-// Usage:
-//   DATABASE_URL=postgres://… node scripts/plan-migrate.mjs
-//   DATABASE_URL=postgres://… node scripts/plan-migrate.mjs --import-json
-//
-// Flags:
-//   --import-json     After creating the schema, insert rows from
-//                     data/plan/db.json (the previous local JSON store).
-//                     Existing rows (matched by id) are skipped.
-
+// Explicit nonproduction target only. Never loads .env.local or DATABASE_URL.
+// node --env-file=.env.excel-staging.local scripts/plan-migrate.mjs --check
+// node --env-file=.env.excel-staging.local scripts/plan-migrate.mjs --apply --only-excel
 import { neon } from "@neondatabase/serverless";
-import { promises as fs } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, "..");
-
-async function loadEnv() {
-  if (process.env.DATABASE_URL) return;
-  for (const name of [".env.local", ".env"]) {
-    try {
-      const raw = await fs.readFile(path.join(ROOT, name), "utf8");
-      for (const line of raw.split(/\r?\n/)) {
-        const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-        if (!m) continue;
-        const key = m[1];
-        if (process.env[key]) continue;
-        let val = m[2];
-        if (
-          (val.startsWith('"') && val.endsWith('"')) ||
-          (val.startsWith("'") && val.endsWith("'"))
-        ) {
-          val = val.slice(1, -1);
-        }
-        process.env[key] = val;
-      }
-    } catch (err) {
-      if (err && err.code !== "ENOENT") throw err;
-    }
-  }
-}
+import { readFile } from "node:fs/promises";
+import {
+  SCHEMA_FILES,
+  applyMigration,
+  migrationTarget,
+  legacyImportCommands,
+} from "./plan-migration-core.mjs";
 
 async function run() {
-  await loadEnv();
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    console.error(
-      "DATABASE_URL is not set. Put it in .env.local or export it before running this script."
-    );
-    process.exit(1);
-  }
-
-  const sql = neon(url);
-  const schemaFiles = [
-    "schema.sql",
-    "schema-2a.sql",
-    "schema-3-devices.sql",
-    "schema-4-module-images.sql",
-    "schema-5-profile-photo.sql",
-  ];
-  for (const file of schemaFiles) {
-    const schemaPath = path.join(ROOT, "lib", "plan", file);
-    try {
-      await fs.access(schemaPath);
-    } catch {
-      continue;
-    }
-    const schema = await fs.readFile(schemaPath, "utf8");
-    const statements = splitSqlStatements(schema);
+  const args = process.argv.slice(2);
+  if (args.includes("--help")) {
     console.log(
-      `Applying ${statements.length} statement(s) from ${file}…`
+      "Usage: node --env-file=<private staging file> scripts/plan-migrate.mjs --check | --apply [--only-excel] [--import-json]",
     );
-    for (const stmt of statements) {
-      await sql.query(stmt);
-    }
-    console.log(`✓ ${file} applied.`);
-  }
-
-  if (process.argv.includes("--import-json")) {
-    await importJson(sql);
-  } else {
-    const existing = await detectJsonStore();
-    if (existing) {
-      console.log(
-        `\nFound existing JSON store at ${existing}. ` +
-          "Run with --import-json to copy its rows into Postgres."
-      );
-    }
-  }
-}
-
-function splitSqlStatements(src) {
-  const out = [];
-  let buf = "";
-  let inDollar = false;
-  for (let i = 0; i < src.length; i++) {
-    const c = src[i];
-    const next2 = src.slice(i, i + 2);
-    if (next2 === "$$") {
-      inDollar = !inDollar;
-      buf += "$$";
-      i += 1;
-      continue;
-    }
-    if (c === ";" && !inDollar) {
-      const trimmed = buf.trim();
-      if (trimmed) out.push(trimmed);
-      buf = "";
-    } else {
-      buf += c;
-    }
-  }
-  const tail = buf.trim();
-  if (tail) out.push(tail);
-  return out
-    .map((s) =>
-      s
-        .split(/\r?\n/)
-        .filter((line) => !line.trim().startsWith("--"))
-        .join("\n")
-        .trim()
-    )
-    .filter(Boolean);
-}
-
-async function detectJsonStore() {
-  const jsonPath = path.join(ROOT, "data", "plan", "db.json");
-  try {
-    await fs.access(jsonPath);
-    return jsonPath;
-  } catch {
-    return null;
-  }
-}
-
-async function importJson(sql) {
-  const jsonPath = await detectJsonStore();
-  if (!jsonPath) {
     console.log(
-      "\nNo data/plan/db.json found — nothing to import. ✓"
+      "Requires PLAN_MIGRATION_ENV=staging|development, PLAN_MIGRATION_DATABASE_URL (direct Neon), PLAN_MIGRATION_EXPECTED_HOST, PLAN_MIGRATION_EXPECTED_BRANCH_ID. DATABASE_URL/.env.local are never used. Optional --import-json includes data/plan/db.json in the same guarded transaction.",
     );
     return;
   }
-  const raw = await fs.readFile(jsonPath, "utf8");
-  const data = JSON.parse(raw);
-  const customers = Array.isArray(data.customers) ? data.customers : [];
-  const plans = Array.isArray(data.plans) ? data.plans : [];
-
-  console.log(
-    `\nImporting ${customers.length} customer(s) and ${plans.length} plan(s)…`
-  );
-
-  let importedCustomers = 0;
-  let skippedCustomers = 0;
-  for (const c of customers) {
-    const result = await sql`
-      INSERT INTO customers (id, name, email, whatsapp, created_at, updated_at)
-      VALUES (${c.id}, ${c.name}, ${c.email}, ${c.whatsapp ?? ""}, ${c.createdAt}, ${c.updatedAt})
-      ON CONFLICT (id) DO NOTHING
-      RETURNING id
-    `;
-    if (result.length > 0) importedCustomers++;
-    else skippedCustomers++;
+  if (
+    args.some(
+      (arg) =>
+        !["--check", "--apply", "--only-excel", "--import-json"].includes(arg),
+    ) ||
+    args.includes("--check") === args.includes("--apply")
+  )
+    throw new Error("Choose exactly --check or --apply; see --help.");
+  // Read only this URL's hostname as a denylist, without loading ambient secrets.
+  let protectedHosts = [];
+  try {
+    const local = await readFile(
+      new URL("../.env.local", import.meta.url),
+      "utf8",
+    );
+    const match = local.match(/^\s*DATABASE_URL\s*=\s*(.*?)\s*$/m);
+    if (match) {
+      const raw = match[1].replace(/^['"]|['"]$/g, "");
+      protectedHosts = [new URL(raw).hostname];
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT")
+      throw new Error(
+        "Explicit migration cannot validate protected local configuration.",
+      );
   }
-
-  let importedPlans = 0;
-  let skippedPlans = 0;
-  for (const p of plans) {
-    const result = await sql`
-      INSERT INTO plans (
-        id, customer_id, private_token, title, subtitle,
-        start_date, end_date, status,
-        access_starts_at, access_ends_at,
-        created_at, updated_at
-      )
-      VALUES (
-        ${p.id}, ${p.customerId}, ${p.privateToken},
-        ${p.title ?? ""}, ${p.subtitle ?? ""},
-        ${p.startDate}, ${p.endDate}, ${p.status}::plan_status,
-        ${p.accessStartsAt}, ${p.accessEndsAt},
-        ${p.createdAt}, ${p.updatedAt}
-      )
-      ON CONFLICT (id) DO NOTHING
-      RETURNING id
-    `;
-    if (result.length > 0) importedPlans++;
-    else skippedPlans++;
-  }
-
-  console.log(
-    `✓ Imported ${importedCustomers} customer(s) (skipped ${skippedCustomers}), ` +
-      `${importedPlans} plan(s) (skipped ${skippedPlans}).`
+  const target = migrationTarget(process.env, protectedHosts);
+  const files = args.includes("--only-excel")
+    ? ["schema-6-excel.sql"]
+    : SCHEMA_FILES;
+  // Read every expected file BEFORE connecting; missing files are errors, never silently skipped.
+  const sources = await Promise.all(
+    files.map((file) =>
+      readFile(new URL(`../lib/plan/${file}`, import.meta.url), "utf8"),
+    ),
   );
+  let dataCommands = [];
+  if (args.includes("--import-json")) {
+    try {
+      dataCommands = legacyImportCommands(
+        JSON.parse(
+          await readFile(
+            new URL("../data/plan/db.json", import.meta.url),
+            "utf8",
+          ),
+        ),
+      );
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+  const client = neon(target.url);
+  const [rows] = await client.transaction(
+    [client.query("SELECT current_setting('neon.branch_id',true) AS branch")],
+    { readOnly: true },
+  );
+  if (rows[0]?.branch !== target.branch)
+    throw new Error(
+      "Neon branch identity differs from the explicitly approved target. No migration applied.",
+    );
   console.log(
-    `\nThe local JSON file remains at:\n  ${jsonPath}\n` +
-      "Delete it when you're sure Postgres is the source of truth."
+    `Verified explicitly configured ${target.environment} branch. No credentials logged.`,
+  );
+  if (args.includes("--check")) {
+    console.log("Read-only preflight complete. No migration applied.");
+    return;
+  }
+  const count = await applyMigration(client, sources, dataCommands);
+  console.log(
+    `Committed ${files.length} schema file(s), ${count} statements, in one transaction.`,
   );
 }
-
-run().catch((err) => {
-  console.error("\nMigration failed:", err?.message || err);
-  process.exit(1);
+run().catch((error) => {
+  // Connection errors may contain credentials/parameters; never print raw errors.
+  const code = /^[A-Z0-9]{5}$/.test(error?.code || "")
+    ? ` SQLSTATE ${error.code}.`
+    : "";
+  const safe =
+    error instanceof Error &&
+    !error.code &&
+    !error.sourceError &&
+    !/postgres(?:ql)?:\/\//i.test(error.message) &&
+    /^(Set PLAN_|Explicit migration|Invalid migration|Migration requires|Migration target|An explicit|Choose exactly|Neon branch|ENOENT)/.test(
+      error.message,
+    )
+      ? ` ${error.message}`
+      : "";
+  console.error(
+    `Migration/preflight failed.${code}${safe} No partial schema transaction was committed. See --help and verify the private staging configuration.`,
+  );
+  process.exitCode = 1;
 });

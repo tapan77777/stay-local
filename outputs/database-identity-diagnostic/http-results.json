@@ -1,0 +1,16 @@
+{
+  "passed": 7,
+  "checks": [
+    "unauthenticated, tampered and expired admin sessions blocked without database access",
+    "real authenticated Next route returns exactly two IDs with no-store and no CORS permission",
+    "Neon transaction flag is read-only and disposable PostgreSQL confirms transaction_read_only=on",
+    "HEAD and POST cannot execute diagnostic SQL",
+    "connection errors produce a generic response without logging raw errors",
+    "disposable database canary unchanged",
+    "build manifest confirms Excel import/API routes are absent"
+  ],
+  "remoteConnections": 0,
+  "next": "16.4.3",
+  "react": "19.2.9",
+  "workspace": "/tmp/staylocal-original-identity-87z6lnf2"
+}

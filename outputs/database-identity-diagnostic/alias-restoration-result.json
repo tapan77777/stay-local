@@ -1,0 +1,49 @@
+{
+  "startedAt": "2026-11-02T03:19:05.343Z",
+  "projectId": "prj_9FAWBUHlqxFlk00cFMMSU9uVWV8e",
+  "approvedAlias": "stay-local-tapan77777s-projects.vercel.app",
+  "restoreDeployment": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom",
+  "originalDeploymentVerified": true,
+  "before": [
+    {
+      "alias": "stay-local-beryl.vercel.app",
+      "deploymentId": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom"
+    },
+    {
+      "alias": "stay-local-tapan77777s-projects.vercel.app",
+      "deploymentId": "dpl_9ncc6Ao2kdcWtQtupBCNDm6D7wtt"
+    },
+    {
+      "alias": "stay-local-git-main-tapan77777s-projects.vercel.app",
+      "deploymentId": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom"
+    }
+  ],
+  "mutationPerformed": true,
+  "verifiedAt": "2026-11-02T03:19:14.050Z",
+  "after": [
+    {
+      "alias": "stay-local-beryl.vercel.app",
+      "deploymentId": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom"
+    },
+    {
+      "alias": "stay-local-tapan77777s-projects.vercel.app",
+      "deploymentId": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom"
+    },
+    {
+      "alias": "stay-local-git-main-tapan77777s-projects.vercel.app",
+      "deploymentId": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom"
+    }
+  ],
+  "allOriginalAliasesRestored": true,
+  "productionTargetUnchanged": true,
+  "environmentMetadataUnchanged": true,
+  "protectionUnchanged": true,
+  "diagnostic": {
+    "id": "dpl_9ncc6Ao2kdcWtQtupBCNDm6D7wtt",
+    "projectId": "prj_9FAWBUHlqxFlk00cFMMSU9uVWV8e",
+    "state": "READY",
+    "url": "stay-local-1r8z8fbhi-tapan77777s-projects.vercel.app",
+    "deleted": false
+  },
+  "databaseIdentityQueryPerformed": false
+}

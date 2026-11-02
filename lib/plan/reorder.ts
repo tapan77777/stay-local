@@ -1,5 +1,5 @@
 import "server-only";
-import { sql } from "./db";
+import { mutatePlanContent } from "./db";
 
 /**
  * Swap `position` with the nearest neighbor in the same group.
@@ -13,11 +13,14 @@ export async function swapPosition(
   tableName: string,
   groupColumn: string,
   id: string,
-  direction: "up" | "down"
+  direction: "up" | "down",
 ): Promise<boolean> {
   const comparator = direction === "up" ? "<" : ">";
   const order = direction === "up" ? "DESC" : "ASC";
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    tableName,
+    "record",
+    id,
     `
     WITH cur AS (
       SELECT id, ${groupColumn} AS group_id, position
@@ -41,7 +44,7 @@ export async function swapPosition(
       AND EXISTS (SELECT 1 FROM neighbor)
     RETURNING id
     `,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length === 2;
 }

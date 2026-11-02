@@ -1,0 +1,10 @@
+{
+  "deploymentId": "dpl_HQZBvpnJYKUvgHHiQFCfM4SMYQzN",
+  "projectId": "prj_9FAWBUHlqxFlk00cFMMSU9uVWV8e",
+  "deleteCommandExit": 0,
+  "deletionVerified": true,
+  "postDeleteErrorCode": null,
+  "deletedAt": "2026-11-01T18:03:32.145Z",
+  "verificationBasis": "Explicit follow-up API returned HTTP 404 and deployment-not-found; removal command reported removed, not skipped.",
+  "liveStateVerifiedUnchanged": true
+}

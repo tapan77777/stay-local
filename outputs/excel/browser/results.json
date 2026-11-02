@@ -1,0 +1,29 @@
+{
+  "engine": "Chromium (installed Google Chrome)",
+  "database": "disposable PGlite only",
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "noDocumentOverflow": true,
+      "confirmationEnabled": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "noDocumentOverflow": true,
+      "confirmationEnabled": true
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "noDocumentOverflow": true,
+      "confirmationEnabled": true
+    }
+  ],
+  "manualDestinationService": true,
+  "ferryOnlyChange": true,
+  "historyAndRestorePreview": true,
+  "malformedWorkbookError": true,
+  "browserErrors": []
+}

@@ -1,10 +1,6 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
-import {
-  TRANSPORT_TYPES,
-  type Transport,
-  type TransportType,
-} from "./types";
+import { mutatePlanContent, sql, timestampToString } from "./db";
+import { TRANSPORT_TYPES, type Transport, type TransportType } from "./types";
 
 interface Row {
   id: string;
@@ -57,11 +53,11 @@ function rowToTransport(r: Row): Transport {
 }
 
 export async function listTransports(
-  destinationId: string
+  destinationId: string,
 ): Promise<Transport[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM transports WHERE destination_id = $1 ORDER BY position ASC, created_at ASC`,
-    [destinationId]
+    [destinationId],
   )) as Row[];
   return rows.map(rowToTransport);
 }
@@ -69,7 +65,7 @@ export async function listTransports(
 export async function getTransport(id: string): Promise<Transport | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM transports WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToTransport(rows[0]) : null;
 }
@@ -88,9 +84,12 @@ export interface TransportInput {
 
 export async function createTransport(
   destinationId: string,
-  input: TransportInput
+  input: TransportInput,
 ): Promise<Transport> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "transports",
+    "destination",
+    destinationId,
     `
     INSERT INTO transports (
       destination_id, position, transport_type,
@@ -115,16 +114,19 @@ export async function createTransport(
       input.priceGuidance.trim(),
       input.tapanNote,
       input.warning,
-    ]
+    ],
   )) as Row[];
   return rowToTransport(rows[0]);
 }
 
 export async function updateTransport(
   id: string,
-  input: TransportInput
+  input: TransportInput,
 ): Promise<Transport | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "transports",
+    "record",
+    id,
     `
     UPDATE transports SET
       transport_type = $2::transport_type,
@@ -151,15 +153,18 @@ export async function updateTransport(
       input.priceGuidance.trim(),
       input.tapanNote,
       input.warning,
-    ]
+    ],
   )) as Row[];
   return rows[0] ? rowToTransport(rows[0]) : null;
 }
 
 export async function deleteTransport(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "transports",
+    "record",
+    id,
     `DELETE FROM transports WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

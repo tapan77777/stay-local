@@ -1,0 +1,8 @@
+{
+  "phase": "build",
+  "command": "npx --yes pnpm@9.15.9 run prebuild && npx --yes pnpm@9.15.9 run build",
+  "exit": 0,
+  "lockfileUnchanged": true,
+  "passed": true,
+  "checkedAt": "2026-11-01T18:12:02.548Z"
+}

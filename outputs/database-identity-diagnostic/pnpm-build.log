@@ -1,0 +1,74 @@
+
+> staylocal@0.1.0 prebuild /private/tmp/staylocal-original-identity-87z6lnf2
+> cp node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs public/maplibre/maplibre-gl-worker.mjs
+
+
+> staylocal@0.1.0 prebuild /private/tmp/staylocal-original-identity-87z6lnf2
+> cp node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs public/maplibre/maplibre-gl-worker.mjs
+
+
+> staylocal@0.1.0 build /private/tmp/staylocal-original-identity-87z6lnf2
+> next build --webpack
+
+▲ Next.js 16.4.3 (webpack)
+✓ Running next.config.ts took 1500ms
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.0s
+  Running TypeScript ...
+  Finished TypeScript in 2.0s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/38) ...
+  Generating static pages using 9 workers (9/38) 
+  Generating static pages using 9 workers (18/38) 
+  Generating static pages using 9 workers (28/38) 
+✓ Generating static pages using 9 workers (38/38) in 285ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ƒ /admin
+├ ƒ /admin/customers
+├ ƒ /admin/customers/new
+├ ƒ /admin/diagnostics/database-identity
+├ ƒ /admin/login
+├ ƒ /admin/plans
+├ ƒ /admin/plans/[id]
+├ ƒ /admin/plans/[id]/destinations/[destId]
+├ ƒ /admin/plans/[id]/destinations/[destId]/[module]
+├ ƒ /admin/plans/[id]/preview
+├ ƒ /admin/plans/[id]/settings
+├ ƒ /admin/plans/new
+├ ○ /consultation
+├ ○ /experiences
+├   /experiences/[slug]
+│ ├ ● /experiences/jibhi-shoja
+│ ├ ● /experiences/dharamkot
+│ ├ ● /experiences/darjeeling-lamahatta
+│ └ ● [+16 more paths]
+├ ○ /guides
+├ ○ /guides/apply
+├ ƒ /plan/[token]
+├ ƒ /plan/[token]/destinations/[destId]
+├ ƒ /plan/[token]/destinations/[destId]/[module]
+├ ƒ /plan/[token]/device
+├ ƒ /plan/[token]/guide
+├ ƒ /plan/[token]/guide/[itemId]
+├ ƒ /plan/[token]/journey
+├ ƒ /plan/[token]/map
+├ ƒ /plan/[token]/more
+├ ○ /pricing
+├ ○ /robots.txt
+├ ○ /services
+└ ○ /sitemap.xml
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+

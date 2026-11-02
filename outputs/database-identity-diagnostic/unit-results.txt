@@ -1,0 +1,13 @@
+✔ unauthenticated and authentication-failure requests never query the database (7.616167ms)
+✔ authenticated result contains exactly the two safe identifiers and no-cache headers (1.076042ms)
+✔ missing, malformed, multiple and non-read-only identities fail closed (0.567125ms)
+✔ connection errors suppress raw credentials and diagnostic expiry prevents database access (0.208875ms)
+✔ HEAD returns no identifiers and never needs a database callback (0.100625ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69.683208

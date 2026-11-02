@@ -1,0 +1,49 @@
+
+> staylocal@0.1.0 test /private/tmp/staylocal-full-release-th97ny3d
+> node --import tsx --test tests/*.test.ts
+
+✔ template includes actual sheets, marked examples, required headers and dropdowns (989.455542ms)
+✔ valid workbook parses and imports atomically as DRAFT without private settings in export (89.341042ms)
+✔ required fields have sheet, row and column references (0.266792ms)
+✔ invalid destination references and duplicate stable keys reject the workbook (0.145417ms)
+✔ date ranges, impossible dates, enums, ordering, numeric types, unsafe URLs and text limits (0.183875ms)
+✔ wrong template version, malformed archives, formulas and external hyperlinks reject (181.87875ms)
+✔ unauthorized requests and cross-origin mutation are blocked before database access (7.784625ms)
+✔ export/import round trip is unchanged; blank cells and omitted rows preserve content (66.763917ms)
+✔ update matching records, add records and preserve protected settings (10.473458ms)
+✔ explicit clearing and deletion, dependent parent deletion and selected-change validation (80.412334ms)
+✔ transaction failure rolls back plan, rows, history and one-use receipt (5.197583ms)
+✔ repeated confirmation returns the same plan with no duplicate records/revisions (3.632208ms)
+✔ manual child edits invalidate pending previews and stale exports (90.642458ms)
+✔ revision history and restoration preserve relationships and unrelated plans (21.565ms)
+✔ manipulated foreign record identifiers are rejected and selecting incomplete graphs fails (87.032791ms)
+✔ sample Andaman workbook generated from the actual import schema (107.777083ms)
+✔ HTTP upload preview, repeated upload deduplication, confirmation and completed replay (90.509ms)
+✔ new records are added through Excel updates and individual changes can be rejected (85.772125ms)
+✔ explicit parent and child deletions apply together and can be restored (74.969625ms)
+✔ expired previews cannot mutate data (5.323625ms)
+✔ all module tables advance content version during normal builder edits (22.670333ms)
+✔ wrong plan scope, unsupported columns and oversized uploads reject without mutation (158.394292ms)
+✔ migration can be applied again without changing plan content (7.483667ms)
+✔ moving surviving children before deleting their old destination avoids cascade loss (7.183959ms)
+✔ numeric cells in descriptive price fields normalize to database text (0.137958ms)
+✔ SQL splitter preserves dollar bodies, quoted semicolons and comments (0.560791ms)
+✔ full migration is atomic, idempotent and settings are transaction-local (1080.240334ms)
+✔ failing DDL rolls back the ENTIRE migration including earlier schema files (469.238542ms)
+✔ schema-6 failure preserves pre-existing plans and leaves no partial Excel schema (426.491166ms)
+✔ migration refuses ambient DATABASE_URL, production labels and mismatched/pooler targets (34.722ms)
+✔ parent lock is a separate statement before any child mutation; direct SQL remains versioned (433.020042ms)
+✔ only aborted deadlock/serialization transactions are retried, with a strict bound (124.410042ms)
+✔ legacy JSON remains opt-in, idempotent and part of the schema transaction (432.098042ms)
+✔ production verification refuses missing configuration and unconfirmed mapping before connecting (0.75775ms)
+✔ production verification rejects staging, mismatched endpoints, pooled direct URL and unsafe TLS (0.163375ms)
+✔ production schema comparison detects missing columns, constraints, enums and new required columns (0.181833ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3289.964042
+

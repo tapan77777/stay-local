@@ -1,0 +1,36 @@
+{
+  "result": "PASS",
+  "checks": [
+    {
+      "width": 1440,
+      "page": "Plan Builder",
+      "result": "PASS"
+    },
+    {
+      "width": 1440,
+      "page": "Excel update",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "page": "Plan Builder",
+      "result": "PASS"
+    },
+    {
+      "width": 390,
+      "page": "Excel update",
+      "result": "PASS"
+    },
+    {
+      "width": 320,
+      "page": "Plan Builder",
+      "result": "PASS"
+    },
+    {
+      "width": 320,
+      "page": "Excel update",
+      "result": "PASS"
+    }
+  ],
+  "runtimeErrors": 0
+}

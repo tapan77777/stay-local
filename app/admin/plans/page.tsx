@@ -18,9 +18,17 @@ export default async function AdminPlansPage() {
         title="Plans"
         description="Every StayLocal Plan — drafts, active trips, archive."
         action={
-          <Link href="/admin/plans/new">
-            <Button size="sm">New plan</Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/admin/plans/import"
+              className="text-sm text-brand-green-dark underline"
+            >
+              Import / Export
+            </Link>
+            <Link href="/admin/plans/new">
+              <Button size="sm">New plan</Button>
+            </Link>
+          </div>
         }
       />
       <div className="p-6">

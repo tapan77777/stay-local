@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
+import { mutatePlanContent, sql, timestampToString } from "./db";
 import type { Stay } from "./types";
 
 interface Row {
@@ -47,7 +47,7 @@ function rowToStay(r: Row): Stay {
 export async function listStays(destinationId: string): Promise<Stay[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM stays WHERE destination_id = $1 ORDER BY position ASC, created_at ASC`,
-    [destinationId]
+    [destinationId],
   )) as Row[];
   return rows.map(rowToStay);
 }
@@ -55,7 +55,7 @@ export async function listStays(destinationId: string): Promise<Stay[]> {
 export async function getStay(id: string): Promise<Stay | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM stays WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToStay(rows[0]) : null;
 }
@@ -74,9 +74,12 @@ export interface StayInput {
 
 export async function createStay(
   destinationId: string,
-  input: StayInput
+  input: StayInput,
 ): Promise<Stay> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "stays",
+    "destination",
+    destinationId,
     `
     INSERT INTO stays (
       destination_id, position, name, area, stay_type, price_category,
@@ -100,16 +103,19 @@ export async function createStay(
       input.bookingUrl.trim(),
       input.imageUrl.trim(),
       input.tapanNote,
-    ]
+    ],
   )) as Row[];
   return rowToStay(rows[0]);
 }
 
 export async function updateStay(
   id: string,
-  input: StayInput
+  input: StayInput,
 ): Promise<Stay | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "stays",
+    "record",
+    id,
     `
     UPDATE stays SET
       name            = $2,
@@ -136,15 +142,18 @@ export async function updateStay(
       input.bookingUrl.trim(),
       input.imageUrl.trim(),
       input.tapanNote,
-    ]
+    ],
   )) as Row[];
   return rows[0] ? rowToStay(rows[0]) : null;
 }
 
 export async function deleteStay(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "stays",
+    "record",
+    id,
     `DELETE FROM stays WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

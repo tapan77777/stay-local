@@ -1,0 +1,8 @@
+{
+  "phase": "install",
+  "command": "npx --yes pnpm@9.15.9 install --frozen-lockfile",
+  "exit": 0,
+  "lockfileUnchanged": true,
+  "passed": true,
+  "checkedAt": "2026-11-01T18:11:10.516Z"
+}

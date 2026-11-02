@@ -1,0 +1,8 @@
+{
+  "phase": "typecheck",
+  "command": "pnpm exec next typegen && pnpm exec tsc --noEmit",
+  "exit": 0,
+  "lockfileUnchanged": true,
+  "passed": true,
+  "checkedAt": "2026-11-02T04:12:24.689Z"
+}

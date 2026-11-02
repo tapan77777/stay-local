@@ -1,0 +1,68 @@
+--- /dev/null
++++ b/app/admin/diagnostics/database-identity/route.ts
+@@ -0,0 +1,20 @@
++import { isAdminAuthenticated } from "@/lib/plan/auth";
++import { sql } from "@/lib/plan/db";
++import { databaseIdentityDiagnostic, diagnosticHead } from "@/lib/plan/database-identity-diagnostic";
++export const runtime = "nodejs";
++export const dynamic = "force-dynamic";
++export const revalidate = 0;
++export const maxDuration = 15;
++export async function GET() {
++  return databaseIdentityDiagnostic(isAdminAuthenticated, async () => {
++    const client = sql();
++    const [, rows] = await client.transaction([
++      client.query("SELECT set_config('statement_timeout','5000',true),set_config('lock_timeout','1000',true)"),
++      client.query("SELECT current_setting('neon.project_id',true) AS project_id,current_setting('neon.branch_id',true) AS branch_id,current_setting('transaction_read_only') AS read_only"),
++    ], { readOnly: true, fetchOptions: { signal: AbortSignal.timeout(8000) } });
++    return rows;
++  });
++}
++export async function HEAD() {
++  return diagnosticHead(isAdminAuthenticated);
++}
+--- /dev/null
++++ b/lib/plan/database-identity-diagnostic.ts
+@@ -0,0 +1,42 @@
++// Temporary diagnostic; no credentials, environment loading, logging or database imports.
++export const DIAGNOSTIC_EXPIRES_AT = Date.parse("2026-11-03T03:30:00Z");
++const headers = {
++  "Cache-Control": "private, no-store, max-age=0",
++  "CDN-Cache-Control": "no-store",
++  "Vercel-CDN-Cache-Control": "no-store",
++  "Pragma": "no-cache",
++  "Vary": "Cookie",
++  "X-Content-Type-Options": "nosniff",
++  "X-Robots-Tag": "noindex, nofollow, noarchive",
++};
++function response(body: unknown, status: number) {
++  return Response.json(body, { status, headers });
++}
++export async function databaseIdentityDiagnostic(
++  authenticate: () => Promise<boolean>,
++  readIdentity: () => Promise<Record<string, unknown>[]>,
++  now: () => number = Date.now,
++): Promise<Response> {
++  try {
++    if (!(await authenticate())) return response({ error: "Unauthorized." }, 401);
++    if (now() >= DIAGNOSTIC_EXPIRES_AT)
++      return response({ error: "Not found." }, 404);
++    const rows = await readIdentity();
++    const row = rows[0];
++    if (rows.length !== 1 || row?.read_only !== "on" ||
++      typeof row.project_id !== "string" || !/^[a-z0-9][a-z0-9-]{1,99}$/.test(row.project_id) ||
++      typeof row.branch_id !== "string" || !/^br-[a-z0-9-]{1,90}$/.test(row.branch_id))
++      return response({ error: "Diagnostic unavailable." }, 503);
++    // Explicit projection: never return other database fields or error details.
++    return response({ project_id: row.project_id, branch_id: row.branch_id }, 200);
++  } catch {
++    return response({ error: "Diagnostic unavailable." }, 503);
++  }
++}
++export async function diagnosticHead(authenticate: () => Promise<boolean>) {
++  try {
++    return new Response(null, { status: (await authenticate()) ? 405 : 401, headers });
++  } catch {
++    return new Response(null, { status: 503, headers });
++  }
++}

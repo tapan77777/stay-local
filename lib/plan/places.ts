@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
+import { mutatePlanContent, sql, timestampToString } from "./db";
 import { PLACE_PRIORITIES, type Place, type PlacePriority } from "./types";
 
 interface Row {
@@ -55,7 +55,7 @@ function rowToPlace(r: Row): Place {
 export async function listPlaces(destinationId: string): Promise<Place[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM places WHERE destination_id = $1 ORDER BY position ASC, created_at ASC`,
-    [destinationId]
+    [destinationId],
   )) as Row[];
   return rows.map(rowToPlace);
 }
@@ -63,7 +63,7 @@ export async function listPlaces(destinationId: string): Promise<Place[]> {
 export async function getPlace(id: string): Promise<Place | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM places WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToPlace(rows[0]) : null;
 }
@@ -83,9 +83,12 @@ export interface PlaceInput {
 
 export async function createPlace(
   destinationId: string,
-  input: PlaceInput
+  input: PlaceInput,
 ): Promise<Place> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "places",
+    "destination",
+    destinationId,
     `
     INSERT INTO places (
       destination_id, position, name, description, why_visit, duration,
@@ -110,16 +113,19 @@ export async function createPlace(
       input.imageUrl.trim(),
       input.tapanNote,
       input.warning,
-    ]
+    ],
   )) as Row[];
   return rowToPlace(rows[0]);
 }
 
 export async function updatePlace(
   id: string,
-  input: PlaceInput
+  input: PlaceInput,
 ): Promise<Place | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "places",
+    "record",
+    id,
     `
     UPDATE places SET
       name        = $2,
@@ -148,15 +154,18 @@ export async function updatePlace(
       input.imageUrl.trim(),
       input.tapanNote,
       input.warning,
-    ]
+    ],
   )) as Row[];
   return rows[0] ? rowToPlace(rows[0]) : null;
 }
 
 export async function deletePlace(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "places",
+    "record",
+    id,
     `DELETE FROM places WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

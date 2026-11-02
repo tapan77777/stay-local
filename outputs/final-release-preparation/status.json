@@ -1,0 +1,41 @@
+{
+  "status": "BLOCKED",
+  "productionTarget": {
+    "vercelProject": "stay-local",
+    "neonProjectId": "lucky-waterfall-84436365",
+    "neonBranchId": "br-broad-pond-b3nfbi06"
+  },
+  "backup": {
+    "passed": true,
+    "createdAt": "2026-11-02T04:31:54.809Z",
+    "bytes": 91636,
+    "sha256": "d776103c80d7ecb13e5987379a8c9fe237324aceff839e6535b9da770b0136fe",
+    "consistentSnapshot": true,
+    "privateReceipt": "/Users/tapannaik/Desktop/Projects/Stay-local/.env.production-release-backups/verified-ZkYEsh/receipt.json"
+  },
+  "offlineRestore": {
+    "passed": true,
+    "applicationTablesMatched": 14,
+    "serverStopped": true
+  },
+  "requestedNeonRestore": {
+    "executed": false,
+    "blockedBy": "No disposable Neon branch/direct connection or control-plane credential configured"
+  },
+  "credentialRotation": {
+    "prepared": true,
+    "executed": false,
+    "strategy": "parallel least-privilege role; new Production DATABASE_URL for next deployment; retire old credential after cutover/drain"
+  },
+  "migration": {
+    "sha256": "5b160fc7ee41547429dbcbb7c21c668d49b968ebb50f8a4ce254da41e2f07540",
+    "reviewed": true,
+    "applied": false,
+    "destructiveCustomerOrPlanDataStatements": false
+  },
+  "productionCredentialsChanged": false,
+  "productionSchemaOrDataChanged": false,
+  "productionDeployed": false,
+  "gitPushed": false,
+  "recoveryPrivateFileIgnored": true
+}

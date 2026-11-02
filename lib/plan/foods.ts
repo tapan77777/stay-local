@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
+import { mutatePlanContent, sql, timestampToString } from "./db";
 import type { Food } from "./types";
 
 interface Row {
@@ -47,7 +47,7 @@ function rowToFood(r: Row): Food {
 export async function listFoods(destinationId: string): Promise<Food[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM foods WHERE destination_id = $1 ORDER BY position ASC, created_at ASC`,
-    [destinationId]
+    [destinationId],
   )) as Row[];
   return rows.map(rowToFood);
 }
@@ -55,7 +55,7 @@ export async function listFoods(destinationId: string): Promise<Food[]> {
 export async function getFood(id: string): Promise<Food | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM foods WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToFood(rows[0]) : null;
 }
@@ -74,9 +74,12 @@ export interface FoodInput {
 
 export async function createFood(
   destinationId: string,
-  input: FoodInput
+  input: FoodInput,
 ): Promise<Food> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "foods",
+    "destination",
+    destinationId,
     `
     INSERT INTO foods (
       destination_id, position, name, category, what_to_try, location,
@@ -100,16 +103,19 @@ export async function createFood(
       input.mapUrl.trim(),
       input.imageUrl.trim(),
       input.tapanNote,
-    ]
+    ],
   )) as Row[];
   return rowToFood(rows[0]);
 }
 
 export async function updateFood(
   id: string,
-  input: FoodInput
+  input: FoodInput,
 ): Promise<Food | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "foods",
+    "record",
+    id,
     `
     UPDATE foods SET
       name            = $2,
@@ -136,15 +142,18 @@ export async function updateFood(
       input.mapUrl.trim(),
       input.imageUrl.trim(),
       input.tapanNote,
-    ]
+    ],
   )) as Row[];
   return rows[0] ? rowToFood(rows[0]) : null;
 }
 
 export async function deleteFood(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "foods",
+    "record",
+    id,
     `DELETE FROM foods WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

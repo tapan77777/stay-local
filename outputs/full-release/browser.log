@@ -1,0 +1,65 @@
+
+> staylocal@0.1.0 plan:test:browser:isolated /private/tmp/staylocal-full-release-th97ny3d
+> node tests/excel-app-smoke.mjs --browser
+
+
+Base URL: http://127.0.0.1:57188
+Test tag: phase1-test-1793592756865
+
+[1] Public site unchanged
+  ✓ GET / → 200
+  ✓ home still renders navbar + brand
+  ✓ /robots.txt disallows /admin
+  ✓ /robots.txt disallows /plan
+
+[2] Admin gating
+  ✓ GET /admin (unauthed) → 307
+  ✓ redirect target is /admin/login
+  ✓ GET /admin/customers (unauthed) → 307
+  ✓ GET /admin/plans/new (unauthed) → 307
+  ✓ GET /admin/login → 200
+  ✓ login form rendered
+  ✓ login page is noindex
+
+[3] Seed via SQL (bypasses the UI)
+  ✓ customer inserted
+  ✓ 4 plan rows inserted (ACTIVE, DISABLED, future, expired)
+
+[4] /plan/[token] access gating
+  ✓ unknown token → 200
+  ✓ unknown token shows generic access form (no info leak)
+  ✓ /plan page is noindex
+  ✓ DISABLED plan → friendly unavailable screen
+  ✓ no internal reason leaked for DISABLED
+  ✓ pre-access-window plan → friendly unavailable screen
+  ✓ post-access-window plan → friendly unavailable screen
+  ✓ ACTIVE plan → 200
+  ✓ ACTIVE plan without session → shows access form
+
+[5] Admin pages (authed via forged signed cookie)
+  ✓ authed GET /admin → 200
+  ✓ dashboard renders
+  ✓ seeded plan appears in recent plans
+  ✓ admin dashboard is noindex
+  ✓ authed GET /admin/customers → 200
+  ✓ seeded customer appears in list
+  ✓ authed GET /admin/plans → 200
+  ✓ all seeded plans listed
+  ✓ authed GET /admin/plans/[id] → 200
+  ✓ plan detail exposes the private token for copying
+  ✓ authed GET /admin/plans/new → 200
+  ✓ public navbar NOT rendered inside /admin
+
+[6] Invalid admin cookie must be rejected
+  ✓ cookie signed with wrong secret → redirect to login
+
+[7] Expired admin cookie must be rejected
+  ✓ expired admin cookie → redirect
+
+[8] Cleanup
+  ✓ test rows removed
+
+37 passed, 0 failed
+Browser PASS: desktop 1440 and mobile 390/320, ferry-only UI update, normal builder child creation, history/restore preview, validation error and no runtime errors.
+Excel running-app smoke: authenticated template, import page, preview, confirmation and builder passed.
+

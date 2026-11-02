@@ -1,0 +1,27 @@
+
+> staylocal@0.1.0 plan:test:devices:isolated /private/tmp/staylocal-full-release-th97ny3d
+> node --import ./tests/isolated-neon.mjs scripts/plan-devices-test.mjs
+
+Seeded test plan 348d3e97-f0f7-4913-8967-c69635e69fc5 (max_devices=2)
+  ✓ T1: first device registered
+  ✓ T2: same device returns existing
+  ✓ T2: active count unchanged at 1
+  ✓ T3: second device registered
+  ✓ T4: third device denied
+  ✓ T4: counts reported as 2 / 2
+  ✓ T5: revoked device gets revoked outcome
+  ✓ T6: new device admitted after revocation freed a slot
+  ✓ T7: increasing cap admits a new device
+  ✓ T8a: previously-registered device still allowed
+  ✓ T8b: new device denied even though cap dropped
+  ✓ T9a: devA revoked
+  ✓ T9b: devD revoked
+  ✓ T9c: devE revoked
+  ✓ T10: exactly max_devices admitted under 5-way race
+  ✓ T10: DB confirms active count never exceeds max_devices
+  ✓ T11a: short junk cookie → limit_reached (no exception)
+  ✓ T11b: non-base64url junk → limit_reached (no exception)
+  ✓ T12: plans.private_token intact; plans.max_devices present
+
+19 passed, 0 failed.
+

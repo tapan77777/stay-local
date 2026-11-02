@@ -1,0 +1,65 @@
+{
+  "candidateHashCheck": "PASS",
+  "candidateSource": "/tmp/staylocal-original-identity-87z6lnf2",
+  "sourceArchiveSha256": "ca118a06ec8a99773f6882708091ddff2884c7e9bcfec33ab77d9da680f17fd0",
+  "project": "stay-local",
+  "projectId": "prj_9FAWBUHlqxFlk00cFMMSU9uVWV8e",
+  "liveDeployment": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom",
+  "liveAlias": "stay-local-beryl.vercel.app",
+  "aliasDeployment": "dpl_FYgpwS3iZ3xze1oJQciiz8USHHom",
+  "sourceCommit": "7e84d3d29acc0374384f39277b525bb8e59eb71f",
+  "databaseConfigMetadataUnchanged": true,
+  "deploymentProtection": "all_except_custom_domains",
+  "existingAutomationBypassCredentialAvailable": false,
+  "existingAutomationCredentialCount": 0,
+  "liveDeploymentSource": "git",
+  "liveDeploymentEnvMetadataAvailable": true,
+  "productionEnvMetadata": [
+    {
+      "id": "tkKnElj5rcZ9ZtQQ",
+      "key": "NEXT_PUBLIC_PLAN_MAP_DEBUG",
+      "type": "plain",
+      "target": [
+        "production"
+      ],
+      "updatedAt": 1791174883423,
+      "createdAt": 1791174883423
+    },
+    {
+      "id": "9cOM81adzuxut8F7",
+      "key": "DATABASE_URL",
+      "type": "sensitive",
+      "target": [
+        "production"
+      ],
+      "updatedAt": 1791125799399,
+      "createdAt": 1791125799399
+    },
+    {
+      "id": "ymoPObzWN3a4aB6w",
+      "key": "ADMIN_PASSWORD",
+      "type": "sensitive",
+      "target": [
+        "production"
+      ],
+      "updatedAt": 1791125799399,
+      "createdAt": 1791125799399
+    },
+    {
+      "id": "cAq0aUJMozF3m6d3",
+      "key": "ADMIN_SESSION_SECRET",
+      "type": "sensitive",
+      "target": [
+        "production"
+      ],
+      "updatedAt": 1791125799399,
+      "createdAt": 1791125799399
+    }
+  ],
+  "verifiedAt": "2026-11-01T17:15:37.347Z",
+  "executionStatus": "STOPPED_BEFORE_DEPLOYMENT",
+  "deploymentCreated": false,
+  "approvedDeploymentCountUsed": 0,
+  "databaseIdentityCheckPerformed": false,
+  "reason": "Protected deployment authentication path unavailable without owner-assisted Vercel sign-in; no existing automation bypass credential. Protection/settings changes are outside approval."
+}

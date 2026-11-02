@@ -18,27 +18,28 @@ import {
 import { listPlanDevices } from "@/lib/plan/devices";
 import { listPlanDocuments } from "@/lib/plan/documents";
 import { listIndiaGuideItems } from "@/lib/plan/india-guide";
-import {
-  evaluatePlanAccess,
-  getPlan,
-} from "@/lib/plan/plans";
+import { evaluatePlanAccess, getPlan } from "@/lib/plan/plans";
 import type { DestinationModuleCounts } from "@/lib/plan/types";
 
 export default async function AdminPlanBuilderPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ excel?: string }>;
 }) {
   await requireAdmin();
   const { id } = await params;
+  const { excel } = await searchParams;
   // Parallel fetches — no sequential waterfall.
-  const [plan, destinations, guideItems, documents, devices] = await Promise.all([
-    getPlan(id),
-    listDestinations(id),
-    listIndiaGuideItems(id),
-    listPlanDocuments(id),
-    listPlanDevices(id),
-  ]);
+  const [plan, destinations, guideItems, documents, devices] =
+    await Promise.all([
+      getPlan(id),
+      listDestinations(id),
+      listIndiaGuideItems(id),
+      listPlanDocuments(id),
+      listPlanDevices(id),
+    ]);
   if (!plan) notFound();
 
   const countsMap = await listDestinationModuleCounts(id);
@@ -57,7 +58,19 @@ export default async function AdminPlanBuilderPage({
             : "No customer linked"
         }
         action={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={`/admin/plans/excel?mode=export&plan=${plan.id}`}
+              className="text-sm text-brand-green-dark underline"
+            >
+              Export Excel
+            </a>
+            <Link
+              href={`/admin/plans/import?plan=${plan.id}`}
+              className="text-sm text-brand-green-dark underline"
+            >
+              Update from Excel / History
+            </Link>
             <PlanStatusBadge status={plan.status} />
             <Link
               href={`/admin/plans/${plan.id}/preview`}
@@ -81,6 +94,15 @@ export default async function AdminPlanBuilderPage({
         }
       />
 
+      {excel === "saved" && (
+        <p
+          role="status"
+          className="mx-6 mt-4 rounded-xl border border-brand-green/20 bg-brand-green/10 p-4 text-sm text-brand-green-dark"
+        >
+          Excel changes saved successfully. You can continue editing this plan
+          below.
+        </p>
+      )}
       <div className="grid grid-cols-1 gap-6 p-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
           <SectionCard

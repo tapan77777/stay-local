@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
+import { mutatePlanContent, sql, timestampToString } from "./db";
 import { NOTE_TYPES, type DestinationNote, type NoteType } from "./types";
 
 interface Row {
@@ -38,21 +38,21 @@ function rowToNote(r: Row): DestinationNote {
 }
 
 export async function listDestinationNotes(
-  destinationId: string
+  destinationId: string,
 ): Promise<DestinationNote[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM destination_notes WHERE destination_id = $1 ORDER BY position ASC, created_at ASC`,
-    [destinationId]
+    [destinationId],
   )) as Row[];
   return rows.map(rowToNote);
 }
 
 export async function getDestinationNote(
-  id: string
+  id: string,
 ): Promise<DestinationNote | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM destination_notes WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToNote(rows[0]) : null;
 }
@@ -65,9 +65,12 @@ export interface DestinationNoteInput {
 
 export async function createDestinationNote(
   destinationId: string,
-  input: DestinationNoteInput
+  input: DestinationNoteInput,
 ): Promise<DestinationNote> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "destination_notes",
+    "destination",
+    destinationId,
     `
     INSERT INTO destination_notes (
       destination_id, position, title, note, note_type
@@ -79,16 +82,19 @@ export async function createDestinationNote(
     )
     RETURNING ${COLS}
     `,
-    [destinationId, input.title.trim(), input.note, assertType(input.noteType)]
+    [destinationId, input.title.trim(), input.note, assertType(input.noteType)],
   )) as Row[];
   return rowToNote(rows[0]);
 }
 
 export async function updateDestinationNote(
   id: string,
-  input: DestinationNoteInput
+  input: DestinationNoteInput,
 ): Promise<DestinationNote | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "destination_notes",
+    "record",
+    id,
     `
     UPDATE destination_notes SET
       title      = $2,
@@ -98,15 +104,18 @@ export async function updateDestinationNote(
     WHERE id = $1
     RETURNING ${COLS}
     `,
-    [id, input.title.trim(), input.note, assertType(input.noteType)]
+    [id, input.title.trim(), input.note, assertType(input.noteType)],
   )) as Row[];
   return rows[0] ? rowToNote(rows[0]) : null;
 }
 
 export async function deleteDestinationNote(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "destination_notes",
+    "record",
+    id,
     `DELETE FROM destination_notes WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

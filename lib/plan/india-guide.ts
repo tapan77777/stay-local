@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
+import { mutatePlanContent, sql, timestampToString } from "./db";
 import {
   GUIDE_CATEGORIES,
   type GuideCategory,
@@ -42,21 +42,21 @@ function rowToItem(r: Row): IndiaGuideItem {
 }
 
 export async function listIndiaGuideItems(
-  planId: string
+  planId: string,
 ): Promise<IndiaGuideItem[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM india_guide_items WHERE plan_id = $1 ORDER BY position ASC, created_at ASC`,
-    [planId]
+    [planId],
   )) as Row[];
   return rows.map(rowToItem);
 }
 
 export async function getIndiaGuideItem(
-  id: string
+  id: string,
 ): Promise<IndiaGuideItem | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM india_guide_items WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToItem(rows[0]) : null;
 }
@@ -69,9 +69,12 @@ export interface IndiaGuideItemInput {
 
 export async function createIndiaGuideItem(
   planId: string,
-  input: IndiaGuideItemInput
+  input: IndiaGuideItemInput,
 ): Promise<IndiaGuideItem> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "india_guide_items",
+    "plan",
+    planId,
     `
     INSERT INTO india_guide_items (plan_id, position, category, title, content)
     VALUES (
@@ -81,16 +84,19 @@ export async function createIndiaGuideItem(
     )
     RETURNING ${COLS}
     `,
-    [planId, assertCategory(input.category), input.title.trim(), input.content]
+    [planId, assertCategory(input.category), input.title.trim(), input.content],
   )) as Row[];
   return rowToItem(rows[0]);
 }
 
 export async function updateIndiaGuideItem(
   id: string,
-  input: IndiaGuideItemInput
+  input: IndiaGuideItemInput,
 ): Promise<IndiaGuideItem | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "india_guide_items",
+    "record",
+    id,
     `
     UPDATE india_guide_items SET
       category   = $2::guide_category,
@@ -100,15 +106,18 @@ export async function updateIndiaGuideItem(
     WHERE id = $1
     RETURNING ${COLS}
     `,
-    [id, assertCategory(input.category), input.title.trim(), input.content]
+    [id, assertCategory(input.category), input.title.trim(), input.content],
   )) as Row[];
   return rows[0] ? rowToItem(rows[0]) : null;
 }
 
 export async function deleteIndiaGuideItem(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "india_guide_items",
+    "record",
+    id,
     `DELETE FROM india_guide_items WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

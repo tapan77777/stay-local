@@ -1,0 +1,23 @@
+{
+  "probe": "Original production /admin dashboard; exact user-reported failing URL still pending",
+  "authCheck": {
+    "method": "GET",
+    "path": "/admin/login",
+    "status": 307,
+    "authenticationVerified": true
+  },
+  "noLoginPostOrCookiesPersisted": true,
+  "request": {
+    "method": "GET",
+    "host": "stay-local-beryl.vercel.app",
+    "path": "/admin",
+    "startedAt": "2026-11-02T03:49:18.083Z",
+    "completedAt": "2026-11-02T03:49:20.979Z",
+    "status": 200,
+    "vercelRequestId": "bom1::iad1::swrmp-1793591358890-ee054c8af673",
+    "dashboardRendered": true,
+    "serverExceptionPage": false,
+    "errorDigest": null
+  },
+  "checkedAt": "2026-11-02T03:49:18.082Z"
+}

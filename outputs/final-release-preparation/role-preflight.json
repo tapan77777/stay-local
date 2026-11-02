@@ -1,0 +1,6 @@
+{
+  "current_role": "neondb_owner",
+  "database": "neondb",
+  "proposed_role_exists": false,
+  "current_role_has_neon_admin_membership": true
+}

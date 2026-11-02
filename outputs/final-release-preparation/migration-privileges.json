@@ -1,0 +1,65 @@
+{
+  "project": "lucky-waterfall-84436365",
+  "branch": "br-broad-pond-b3nfbi06",
+  "tableOwnership": [
+    {
+      "table_name": "customers",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "destination_notes",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "destinations",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "experiences",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "foods",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "india_guide_items",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "itinerary_days",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "map_pins",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "places",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "plan_devices",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "plan_documents",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "plans",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "stays",
+      "owner_privileges": true
+    },
+    {
+      "table_name": "transports",
+      "owner_privileges": true
+    }
+  ],
+  "can_create_public_objects": true,
+  "existing_excel_function_collisions": 0,
+  "allCurrentTablesHaveOwnerPrivileges": true
+}

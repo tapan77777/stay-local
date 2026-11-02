@@ -1,0 +1,54 @@
+{
+  "verifiedAt": "2026-11-02T03:55:19.089Z",
+  "identity": {
+    "project_id": "lucky-waterfall-84436365",
+    "branch_id": "br-broad-pond-b3nfbi06",
+    "read_only": "on",
+    "server_version": "18.6 (4e5fd08)"
+  },
+  "productionIdentityMatchesOwnerDiagnostic": true,
+  "sourceCommit": "7e84d3d29acc0374384f39277b525bb8e59eb71f",
+  "usesPrisma": false,
+  "actualPersistence": "Neon SQL services and SQL schema files 1–5",
+  "baselineTablesExpected": 14,
+  "baselineTablesFound": 14,
+  "baselineColumnsExpected": 178,
+  "baselineColumnsMatched": 178,
+  "missingTables": [],
+  "missingColumns": [],
+  "columnDifferences": [],
+  "missingConstraints": [],
+  "missingEnums": [],
+  "missingIndexes": [],
+  "readPermissionIssues": [],
+  "rowSecurity": [],
+  "adminChecks": [
+    {
+      "name": "Dashboard counters",
+      "passed": true,
+      "method": "EXPLAIN without ANALYZE; no customer rows returned"
+    },
+    {
+      "name": "Dashboard recent plans",
+      "passed": true,
+      "method": "EXPLAIN without ANALYZE; no customer rows returned"
+    },
+    {
+      "name": "Customer list projection",
+      "passed": true,
+      "method": "EXPLAIN without ANALYZE; no customer rows returned"
+    }
+  ],
+  "excelSchema": {
+    "versionColumnPresent": false,
+    "previewsTablePresent": false,
+    "revisionsTablePresent": false,
+    "requiredByCurrentDeployedAdmin": false
+  },
+  "schemaMatchesDeployedBaseline": true,
+  "limitations": [
+    "No customer-row content queried; EXPLAIN plans discarded.",
+    "Neon control-plane project display name and branch display name not independently inspected.",
+    "No migration or database write; diagnostic retained pending explicit deletion approval."
+  ]
+}

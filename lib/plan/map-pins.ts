@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
+import { mutatePlanContent, sql, timestampToString } from "./db";
 import { PIN_CATEGORIES, type MapPin, type PinCategory } from "./types";
 
 interface Row {
@@ -46,7 +46,7 @@ function rowToPin(r: Row): MapPin {
 export async function listMapPins(destinationId: string): Promise<MapPin[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM map_pins WHERE destination_id = $1 ORDER BY position ASC, created_at ASC`,
-    [destinationId]
+    [destinationId],
   )) as Row[];
   return rows.map(rowToPin);
 }
@@ -54,7 +54,7 @@ export async function listMapPins(destinationId: string): Promise<MapPin[]> {
 export async function getMapPin(id: string): Promise<MapPin | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM map_pins WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToPin(rows[0]) : null;
 }
@@ -70,9 +70,12 @@ export interface MapPinInput {
 
 export async function createMapPin(
   destinationId: string,
-  input: MapPinInput
+  input: MapPinInput,
 ): Promise<MapPin> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "map_pins",
+    "destination",
+    destinationId,
     `
     INSERT INTO map_pins (
       destination_id, position, name, latitude, longitude,
@@ -93,16 +96,19 @@ export async function createMapPin(
       assertCategory(input.category),
       input.description,
       input.mapUrl.trim(),
-    ]
+    ],
   )) as Row[];
   return rowToPin(rows[0]);
 }
 
 export async function updateMapPin(
   id: string,
-  input: MapPinInput
+  input: MapPinInput,
 ): Promise<MapPin | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "map_pins",
+    "record",
+    id,
     `
     UPDATE map_pins SET
       name        = $2,
@@ -123,15 +129,18 @@ export async function updateMapPin(
       assertCategory(input.category),
       input.description,
       input.mapUrl.trim(),
-    ]
+    ],
   )) as Row[];
   return rows[0] ? rowToPin(rows[0]) : null;
 }
 
 export async function deleteMapPin(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "map_pins",
+    "record",
+    id,
     `DELETE FROM map_pins WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

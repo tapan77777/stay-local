@@ -1,0 +1,62 @@
+{
+  "result": "PASS",
+  "base": "https://stay-local-beryl.vercel.app",
+  "customerId": "7e7b24ae-df53-4290-807f-b924f7ab5962",
+  "planId": "5ff13d4a-614c-4d0a-ac78-d68452061a4c",
+  "results": [
+    {
+      "name": "Production identity",
+      "result": "PASS"
+    },
+    {
+      "name": "Live public/admin/customers/Plan Builder pages",
+      "result": "PASS"
+    },
+    {
+      "name": "Authenticated template and unauthorized rejection",
+      "result": "PASS"
+    },
+    {
+      "name": "Existing customer/plan content preserved against backup",
+      "result": "PASS"
+    },
+    {
+      "name": "Existing plan opens in live builder",
+      "result": "PASS"
+    },
+    {
+      "name": "Andaman workbook draft import",
+      "result": "PASS"
+    },
+    {
+      "name": "Duplicate import and repeated confirmation protection",
+      "result": "PASS"
+    },
+    {
+      "name": "Export",
+      "result": "PASS"
+    },
+    {
+      "name": "Ferry 08:00 to 09:30; unrelated fields unchanged",
+      "result": "PASS"
+    },
+    {
+      "name": "Stale export rejection",
+      "result": "PASS"
+    },
+    {
+      "name": "Invalid workbook rejection",
+      "result": "PASS"
+    },
+    {
+      "name": "Revision history and restoration",
+      "result": "PASS"
+    },
+    {
+      "name": "Disposable draft opens in Plan Builder",
+      "result": "PASS"
+    }
+  ],
+  "deviceTableActivityAllowed": true,
+  "fixtureRetainedAsDraft": true
+}

@@ -1,10 +1,6 @@
 import "server-only";
-import { sql, dateToString, timestampToString } from "./db";
-import type {
-  Destination,
-  DestinationModuleCounts,
-  ModuleKey,
-} from "./types";
+import { mutatePlanContent, sql, dateToString, timestampToString } from "./db";
+import type { Destination, DestinationModuleCounts, ModuleKey } from "./types";
 
 interface DestinationRow {
   id: string;
@@ -80,12 +76,10 @@ function rowToDestination(r: DestinationRow): Destination {
   };
 }
 
-export async function listDestinations(
-  planId: string
-): Promise<Destination[]> {
+export async function listDestinations(planId: string): Promise<Destination[]> {
   const rows = (await sql().query(
     `SELECT ${DESTINATION_COLUMNS} FROM destinations WHERE plan_id = $1 ORDER BY position ASC, created_at ASC`,
-    [planId]
+    [planId],
   )) as DestinationRow[];
   return rows.map(rowToDestination);
 }
@@ -93,7 +87,7 @@ export async function listDestinations(
 export async function getDestination(id: string): Promise<Destination | null> {
   const rows = (await sql().query(
     `SELECT ${DESTINATION_COLUMNS} FROM destinations WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as DestinationRow[];
   return rows[0] ? rowToDestination(rows[0]) : null;
 }
@@ -111,10 +105,13 @@ export interface CreateDestinationInput {
 }
 
 export async function createDestination(
-  input: CreateDestinationInput
+  input: CreateDestinationInput,
 ): Promise<Destination> {
   const m = input.moduleImageUrls;
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "destinations",
+    "plan",
+    input.planId,
     `
     INSERT INTO destinations (
       plan_id, position, name, intro, arrival_date, departure_date,
@@ -148,7 +145,7 @@ export async function createDestination(
       m.experiences.trim(),
       m.map.trim(),
       m.notes.trim(),
-    ]
+    ],
   )) as DestinationRow[];
   return rowToDestination(rows[0]);
 }
@@ -166,10 +163,13 @@ export interface UpdateDestinationInput {
 
 export async function updateDestination(
   id: string,
-  input: UpdateDestinationInput
+  input: UpdateDestinationInput,
 ): Promise<Destination | null> {
   const m = input.moduleImageUrls;
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "destinations",
+    "record",
+    id,
     `
     UPDATE destinations SET
       name                   = $2,
@@ -208,15 +208,18 @@ export async function updateDestination(
       m.experiences.trim(),
       m.map.trim(),
       m.notes.trim(),
-    ]
+    ],
   )) as DestinationRow[];
   return rows[0] ? rowToDestination(rows[0]) : null;
 }
 
 export async function deleteDestination(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "destinations",
+    "record",
+    id,
     `DELETE FROM destinations WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }
@@ -226,7 +229,7 @@ export async function deleteDestination(id: string): Promise<boolean> {
  * Used by the admin plan builder to show "{N} items" next to each module.
  */
 export async function listDestinationModuleCounts(
-  planId: string
+  planId: string,
 ): Promise<Map<string, DestinationModuleCounts>> {
   const rows = (await sql().query(
     `
@@ -243,7 +246,7 @@ export async function listDestinationModuleCounts(
     FROM destinations d
     WHERE d.plan_id = $1
     `,
-    [planId]
+    [planId],
   )) as (DestinationModuleCounts & { destination_id: string })[];
   const result = new Map<string, DestinationModuleCounts>();
   for (const r of rows) {
@@ -262,7 +265,7 @@ export async function listDestinationModuleCounts(
 }
 
 export async function getDestinationModuleCounts(
-  destinationId: string
+  destinationId: string,
 ): Promise<DestinationModuleCounts> {
   const rows = (await sql().query(
     `
@@ -276,16 +279,18 @@ export async function getDestinationModuleCounts(
       (SELECT COUNT(*)::int FROM map_pins           WHERE destination_id = $1) AS map,
       (SELECT COUNT(*)::int FROM destination_notes  WHERE destination_id = $1) AS notes
     `,
-    [destinationId]
+    [destinationId],
   )) as DestinationModuleCounts[];
-  return rows[0] ?? {
-    itinerary: 0,
-    places: 0,
-    transport: 0,
-    stays: 0,
-    food: 0,
-    experiences: 0,
-    map: 0,
-    notes: 0,
-  };
+  return (
+    rows[0] ?? {
+      itinerary: 0,
+      places: 0,
+      transport: 0,
+      stays: 0,
+      food: 0,
+      experiences: 0,
+      map: 0,
+      notes: 0,
+    }
+  );
 }

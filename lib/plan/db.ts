@@ -14,7 +14,7 @@ export function sql(): NeonQueryFunction<false, false> {
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error(
-      "DATABASE_URL is not configured. Set it to your Neon Postgres connection string, then run `npm run plan:migrate`."
+      "DATABASE_URL is not configured. Set it to your Neon Postgres connection string, then run `npm run plan:migrate`.",
     );
   }
   _sql = neon(url);
@@ -60,4 +60,24 @@ export function timestampToString(v: unknown): string | null {
     return Number.isNaN(d.getTime()) ? null : d.toISOString();
   }
   return null;
+}
+
+/** Normal builder content writes share Excel's parent-first lock order. */
+export async function mutatePlanContent(
+  table: string,
+  scope: "plan" | "destination" | "record",
+  id: string,
+  text: string,
+  values: unknown[],
+): Promise<unknown[]> {
+  const { contentMutationCommands, retryTransaction } =
+    await import("./transactions");
+  const client = sql();
+  return retryTransaction(async () => {
+    const commands = contentMutationCommands(table, scope, id, text, values);
+    const results = await client.transaction(
+      commands.map((command) => client.query(command.text, command.values)),
+    );
+    return results[results.length - 1];
+  });
 }

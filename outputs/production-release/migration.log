@@ -1,0 +1,43 @@
+BEGIN
+SET
+SET
+SET
+ case 
+------
+ 5min
+(1 row)
+
+       set_config       |        set_config        |       set_config        
+------------------------+--------------------------+-------------------------
+ br-broad-pond-b3nfbi06 | lucky-waterfall-84436365 | owner-approved-20261102
+(1 row)
+
+DO
+ pg_advisory_xact_lock 
+-----------------------
+ 
+(1 row)
+
+ALTER TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE FUNCTION
+DO
+CREATE FUNCTION
+DO
+CREATE FUNCTION
+DO
+COMMIT
+psql:lib/plan/schema-6-excel.sql:42: NOTICE:  trigger "sl_excel_plan_version" for relation "plans" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "destinations" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "india_guide_items" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "plan_documents" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "itinerary_days" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "places" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "transports" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "stays" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "foods" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "experiences" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "map_pins" does not exist, skipping
+psql:lib/plan/schema-6-excel.sql:72: NOTICE:  trigger "sl_excel_child_version" for relation "destination_notes" does not exist, skipping

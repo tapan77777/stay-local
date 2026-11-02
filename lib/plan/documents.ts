@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
+import { mutatePlanContent, sql, timestampToString } from "./db";
 import type { PlanDocument } from "./types";
 
 interface Row {
@@ -31,21 +31,21 @@ function rowToDocument(r: Row): PlanDocument {
 }
 
 export async function listPlanDocuments(
-  planId: string
+  planId: string,
 ): Promise<PlanDocument[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM plan_documents WHERE plan_id = $1 ORDER BY position ASC, created_at ASC`,
-    [planId]
+    [planId],
   )) as Row[];
   return rows.map(rowToDocument);
 }
 
 export async function getPlanDocument(
-  id: string
+  id: string,
 ): Promise<PlanDocument | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM plan_documents WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToDocument(rows[0]) : null;
 }
@@ -58,9 +58,12 @@ export interface PlanDocumentInput {
 
 export async function createPlanDocument(
   planId: string,
-  input: PlanDocumentInput
+  input: PlanDocumentInput,
 ): Promise<PlanDocument> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "plan_documents",
+    "plan",
+    planId,
     `
     INSERT INTO plan_documents (plan_id, position, title, description, file_url)
     VALUES (
@@ -70,16 +73,19 @@ export async function createPlanDocument(
     )
     RETURNING ${COLS}
     `,
-    [planId, input.title.trim(), input.description, input.fileUrl.trim()]
+    [planId, input.title.trim(), input.description, input.fileUrl.trim()],
   )) as Row[];
   return rowToDocument(rows[0]);
 }
 
 export async function updatePlanDocument(
   id: string,
-  input: PlanDocumentInput
+  input: PlanDocumentInput,
 ): Promise<PlanDocument | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "plan_documents",
+    "record",
+    id,
     `
     UPDATE plan_documents SET
       title       = $2,
@@ -89,15 +95,18 @@ export async function updatePlanDocument(
     WHERE id = $1
     RETURNING ${COLS}
     `,
-    [id, input.title.trim(), input.description, input.fileUrl.trim()]
+    [id, input.title.trim(), input.description, input.fileUrl.trim()],
   )) as Row[];
   return rows[0] ? rowToDocument(rows[0]) : null;
 }
 
 export async function deletePlanDocument(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "plan_documents",
+    "record",
+    id,
     `DELETE FROM plan_documents WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }

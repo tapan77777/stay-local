@@ -1,0 +1,22 @@
+# Local secrets, operator artifacts and development files never enter a deployment.
+.git
+.vercel
+node_modules
+.next
+out
+build
+coverage
+.env*
+*.pem
+*.tsbuildinfo
+*.log
+.DS_Store
+outputs
+data
+tests
+docs
+config
+scripts
+.agents
+.codex
+.aws

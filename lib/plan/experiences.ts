@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, timestampToString } from "./db";
+import { mutatePlanContent, sql, timestampToString } from "./db";
 import type { Experience } from "./types";
 
 interface Row {
@@ -47,11 +47,11 @@ function rowToExperience(r: Row): Experience {
 }
 
 export async function listExperiences(
-  destinationId: string
+  destinationId: string,
 ): Promise<Experience[]> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM experiences WHERE destination_id = $1 ORDER BY position ASC, created_at ASC`,
-    [destinationId]
+    [destinationId],
   )) as Row[];
   return rows.map(rowToExperience);
 }
@@ -59,7 +59,7 @@ export async function listExperiences(
 export async function getExperience(id: string): Promise<Experience | null> {
   const rows = (await sql().query(
     `SELECT ${COLS} FROM experiences WHERE id = $1 LIMIT 1`,
-    [id]
+    [id],
   )) as Row[];
   return rows[0] ? rowToExperience(rows[0]) : null;
 }
@@ -79,9 +79,12 @@ export interface ExperienceInput {
 
 export async function createExperience(
   destinationId: string,
-  input: ExperienceInput
+  input: ExperienceInput,
 ): Promise<Experience> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "experiences",
+    "destination",
+    destinationId,
     `
     INSERT INTO experiences (
       destination_id, position, name, description, why_recommended,
@@ -106,16 +109,19 @@ export async function createExperience(
       input.mapUrl.trim(),
       input.imageUrl.trim(),
       input.tapanNote,
-    ]
+    ],
   )) as Row[];
   return rowToExperience(rows[0]);
 }
 
 export async function updateExperience(
   id: string,
-  input: ExperienceInput
+  input: ExperienceInput,
 ): Promise<Experience | null> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "experiences",
+    "record",
+    id,
     `
     UPDATE experiences SET
       name            = $2,
@@ -144,15 +150,18 @@ export async function updateExperience(
       input.mapUrl.trim(),
       input.imageUrl.trim(),
       input.tapanNote,
-    ]
+    ],
   )) as Row[];
   return rows[0] ? rowToExperience(rows[0]) : null;
 }
 
 export async function deleteExperience(id: string): Promise<boolean> {
-  const rows = (await sql().query(
+  const rows = (await mutatePlanContent(
+    "experiences",
+    "record",
+    id,
     `DELETE FROM experiences WHERE id = $1 RETURNING id`,
-    [id]
+    [id],
   )) as { id: string }[];
   return rows.length > 0;
 }
